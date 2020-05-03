@@ -1,4 +1,4 @@
-// +build debug
+// +build debugo
 
 package debugo
 
