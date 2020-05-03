@@ -1,16 +1,13 @@
-package debug
+// +build debug
 
-// Enabled debugging mode
-var Enabled bool = false
+package debugo
 
 // Assert the given bool and panic if false.
 // assertion are executed if the debug mode
 // is enabled.
 func Assert(ok bool, msg string) {
-	if Enabled {
-		if !ok {
-			panic(msg)
-		}
+	if !ok {
+		panic(msg)
 	}
 }
 
@@ -18,9 +15,7 @@ func Assert(ok bool, msg string) {
 // false. Assertion are executed if the debug mode
 // is enabled.
 func AssertF(ok func() bool, msg string) {
-	if Enabled {
-		if !ok() {
-			panic(msg)
-		}
+	if !ok() {
+		panic(msg)
 	}
 }
