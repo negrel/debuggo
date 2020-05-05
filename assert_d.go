@@ -1,14 +1,21 @@
-// +build !debugo
+// +build debugo
 
 package debugo
-
 
 // Assert the given bool and panic if false.
 // assertion are executed if the debug mode
 // is enabled.
-func Assert(_ bool, _ string) {}
+func Assert(ok bool, err string) {
+	if !ok {
+		panic(err)
+	}
+}
 
 // AssertF the given function and panic if return
 // false. Assertion are executed if the debug mode
 // is enabled.
-func AssertF(_ func() (bool, string)) {}
+func AssertF(fn func() (bool, string)) {
+	if ok, err := fn(); !ok {
+		panic(err)
+	}
+}
