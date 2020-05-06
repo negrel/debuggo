@@ -1,4 +1,4 @@
-// +build !debugo
+// +build !debugo !debugo-assert
 
 package debugo
 
