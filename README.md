@@ -16,7 +16,7 @@ go get github.com/negrel/debugo
 
 Take a look at the following example :
 
-![example](https://github.com/negrel/debugo/raw/master/.github/carbon.svg?sanitize=true)
+![example](https://github.com/negrel/debugo/raw/master/.github/carbon.png?sanitize=true)
 
 Let's run the program:
 
@@ -44,7 +44,6 @@ exit status 2
 Now the program panic because the compiler include the **debugo.Assert** function.
 
 If we take a look at the **Static Single Assignment**, we will notice that the **debugo** function are removed by the compiler.
-You can take a look at the SSA code [here]().
 
 
 ### Contributing
