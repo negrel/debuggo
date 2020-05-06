@@ -2,5 +2,5 @@
 
 package debugo
 
-// Run ...
+// Run the given function.
 func Run(_ func()) {}
