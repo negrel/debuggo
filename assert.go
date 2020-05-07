@@ -4,11 +4,8 @@ package debugo
 
 
 // Assert the given bool and panic if false.
-// assertion are executed if the debug mode
-// is enabled.
+//
+// You must compile using the 'debugo' or
+//'debugo-assert' build flag, otherwise
+// Assert will be removed by the compiler.
 func Assert(_ bool, _ string) {}
-
-// AssertF the given function and panic if return
-// false. Assertion are executed if the debug mode
-// is enabled.
-func AssertF(_ func() (bool, string)) {}
