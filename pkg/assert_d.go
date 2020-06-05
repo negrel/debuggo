@@ -11,11 +11,3 @@ func Assert(ok bool, err string) {
 	}
 }
 
-// AssertF the given function and panic if return
-// false. Assertion are executed if the debug mode
-// is enabled.
-func AssertF(fn func() (bool, string)) {
-	if ok, err := fn(); !ok {
-		panic(err)
-	}
-}
