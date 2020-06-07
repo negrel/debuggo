@@ -1,4 +1,4 @@
-// +build !debugo
+// +build release
 
 package debugo
 

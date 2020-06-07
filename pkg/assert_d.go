@@ -1,10 +1,9 @@
-// +build debugo debugo-assert
-
-package debugo
+// +build !release
 
 // Assert the given bool and panic if false.
-// assertion are executed if the debug mode
-// is enabled.
+//
+// The function will be removed by the compiler
+// for production if you use the release build tag.
 func Assert(ok bool, err string) {
 	if !ok {
 		panic(err)
