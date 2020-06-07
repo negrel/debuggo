@@ -1,5 +1,7 @@
 // +build !release
 
+package debugo
+
 // Assert the given bool and panic if false.
 //
 // The function will be removed by the compiler
