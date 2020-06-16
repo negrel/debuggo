@@ -3,7 +3,7 @@
 package debugo
 
 // Run the given function.
-// 
+//
 // The function will be removed by the compiler
-// for production if you use the release build tag.
+// for production the debugo build tag is used.
 func Run(_ func()) {}
