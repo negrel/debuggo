@@ -1,4 +1,4 @@
-// +build !release
+// +build !debugo
 
 package debugo
 
@@ -6,6 +6,4 @@ package debugo
 // 
 // The function will be removed by the compiler
 // for production if you use the release build tag.
-func Run(fn func()) {
-	fn()
-}
+func Run(_ func()) {}

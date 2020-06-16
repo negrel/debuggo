@@ -12,7 +12,7 @@ go get github.com/negrel/debugo
 
 ## Hello world
 
-**debugo.Assert** is a function that assert the given bool and panic if it is not true.
+During development, use the assert statement — debugo.Assert(condition, panicMessage); — to disrupt normal execution if a boolean condition is false.
 
 Take a look at the following example :
 
@@ -23,14 +23,6 @@ Let's run the program:
 ```
 go run .
 'Hello world!' == 'Bye Bye' is false
-```
-
-As you can see, no panic was triggered because the **debugo.Assert** function was not executed. The function was **removed** when the program was compiled.
-
-Let's run the program with the debugo tag:
-```
-go run -tags debugo .
-'Hello world!' == 'Bye Bye' is false
 panic: error, the given string are not equal
 
 goroutine 1 [running]:
@@ -40,8 +32,6 @@ main.main()
         /home/negrel/code/golang/src/github.com/negrel/beta/main.go:17 +0x146
 exit status 2
 ```
-
-Now the program panic because the compiler include the **debugo.Assert** function.
 
 If we take a look at the **Static Single Assignment**, we will notice that the **debugo** function are removed by the compiler.
 
