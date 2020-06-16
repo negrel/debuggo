@@ -18,15 +18,7 @@ func fib(n int) int {
 
 	result := fib(n-1) + fib(n-1)
 
-	debugo.Run(func() {
-		logFib(n, result)
-	})
+	debugo.Printf("[DEBUGO] - Fib %v : %v\n", n, result)
 
 	return result
-}
-
-// This function will be removed of the final binaries
-// if the compiler inline it in the debugo run.
-func logFib(n, result int) {
-	log.Printf("[DEBUGO] - Fib %v : %v\n", n, result)
 }
