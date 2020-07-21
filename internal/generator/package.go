@@ -1,4 +1,4 @@
-package debuggo
+package generator
 
 import (
 	"go/token"

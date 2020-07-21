@@ -1,4 +1,4 @@
-package debuggo
+package generator
 
 // Options define the debuggo generator options.
 type Options struct {
