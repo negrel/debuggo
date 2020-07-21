@@ -26,10 +26,10 @@ func (f *file) generateContent(release bool) (content []byte, err error) {
 	buf.WriteString("//go:generate debuggo " + f.pkg.path + "\n")
 
 	if release {
-		buf.WriteString("//+build !" + f.pkg.name + "\n\n")
+		buf.WriteString("\n// +build !" + f.pkg.name + "\n\n")
 		err = f.generateReleaseContent(&buf)
 	} else {
-		buf.WriteString("//+build " + f.pkg.name + "\n\n")
+		buf.WriteString("\n// +build " + f.pkg.name + "\n\n")
 		err = f.generateDebugContent(&buf)
 	}
 

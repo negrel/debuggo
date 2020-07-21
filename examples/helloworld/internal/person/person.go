@@ -2,6 +2,8 @@ package person
 
 import (
 	"fmt"
+
+	debug "github.com/negrel/debuggo/examples/helloworld/internal/debug/person"
 )
 
 var _ fmt.Stringer = &Person{}
@@ -23,6 +25,7 @@ func New(name string) *Person {
 // Adopt the given pet.
 func (p *Person) Adopt(pet *Pet) {
 	p.Pets = append(p.Pets, pet)
+	debug.Println(p.Name + " is adopting " + pet.Name)
 }
 
 func (p *Person) String() string {
