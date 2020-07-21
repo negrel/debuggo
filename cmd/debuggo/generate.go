@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/negrel/debuggo/internal/debuggo"
+	debuggo "github.com/negrel/debuggo/internal/generator"
 	"github.com/urfave/cli"
 )
 
