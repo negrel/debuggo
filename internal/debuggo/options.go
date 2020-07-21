@@ -8,6 +8,4 @@ type Options struct {
 	// Output is the relative path to output
 	// debugging packages.
 	Output string
-	// Name of the output directory.
-	OutputDir string
 }

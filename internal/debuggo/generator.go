@@ -1,6 +1,7 @@
 package debuggo
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -14,7 +15,9 @@ import (
 
 // Generate start the build process of debugging package.
 func Generate(opt Options) {
-	gen := generator{}
+	gen := generator{
+		outputDir: opt.Output,
+	}
 	pkgs := gen.parsePackages(opt.PkgPattern, opt.PkgTags)
 
 	// Generate in a separate goroutine the
@@ -62,14 +65,8 @@ func (gen *generator) parsePackages(patterns []string, tags []string) []*Package
 
 	for _, pkg := range pkgs {
 		// We don't generate the package if it contain any error.
-		err := len(pkg.Errors) > 0
-		if err {
-			for _, pkgError := range pkg.Errors {
-				gen.errors = append(gen.errors, pkgError)
-			}
-
-			gen.errors = append(gen.errors, fmt.Errorf("[ERROR] - Stop generating %v debugging package", pkg.Name))
-			continue
+		for _, pkgError := range pkg.Errors {
+			gen.errors = append(gen.errors, errors.New(pkgError.Error()))
 		}
 
 		rPkgs = append(rPkgs, NewPackage(pkg))

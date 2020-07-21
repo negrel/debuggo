@@ -6,6 +6,7 @@ import (
 	"go/format"
 	"go/token"
 	"io/ioutil"
+	"reflect"
 	"strings"
 
 	"fmt"
@@ -68,12 +69,25 @@ func (f *file) generateReleaseContent(buf *bytes.Buffer) error {
 	// Getting the file object
 	// that contain top level declaration.
 	ast.Inspect(f.ast, func(n ast.Node) bool {
-		// We only care about top-level declaration
-		var ok bool
-		afile, ok = n.(*ast.File)
-		if !ok {
-			return true
+
+		// fmt.Print(reflect.TypeOf(n))
+		// fmt.Printf(" %+v\n", n)
+		// return true
+
+		// File object contain a top-level declaration field.
+		switch node := n.(type) {
+		case *ast.File:
+			afile = node
+
+		// Looking for identifier that point to an imported package.
+		case *ast.Ident:
+			fmt.Printf("%+v\n", node)
+
+		default:
+			fmt.Print(reflect.TypeOf(node))
+			fmt.Printf(" %+v\n", node)
 		}
+
 		return false
 	})
 
@@ -90,8 +104,15 @@ func (f *file) generateReleaseContent(buf *bytes.Buffer) error {
 			continue
 		}
 
-		// 'import', 'const', 'var' declaration
-		start, end := f.pkg.fset.Position(decl.Pos()), f.pkg.fset.Position(decl.End())
+		// We don't care about imports.
+		gDecl, ok := decl.(*ast.GenDecl)
+		if !ok || gDecl.Tok == token.IMPORT {
+			continue
+		}
+
+		// copying 'const', 'var' and 'type' declaration
+		start, end := f.pkg.fset.Position(gDecl.Pos()), f.pkg.fset.Position(gDecl.End())
+
 		copy := copyBytes(src, start, end)
 		copy = append(copy, '\n')
 		buf.Write(copy)
@@ -126,6 +147,7 @@ func copyBytes(src []byte, from, to token.Position) []byte {
 	return src[start:end]
 }
 
+// return the signature of a function declaration
 func declToString(e ast.Expr) string {
 	switch expr := e.(type) {
 	case *ast.Ellipsis:
@@ -191,6 +213,7 @@ func declToString(e ast.Expr) string {
 
 }
 
+// Format the given field list with the given format string.
 func fmtFieldList(format string, fieldsList []*ast.Field) []string {
 	fields := make([]string, 0, len(fieldsList))
 	for _, field := range fieldsList {
