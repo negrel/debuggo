@@ -1,14 +1,16 @@
 # :small_red_triangle: Debuggo
 
-*Optimized debugging package generator.*
-
-Debugo is a debugging package generator that doesn't increase the size of your binaries thanks to the compiler optimizations and build tags.
+*Debuggo generate an optimized debugging package for minimal performance / size overhead in production.*
 
 ## Installation
 
 ```
-go install github.com/negrel/debuggo
+# Install the CLI tool
+go install github.com/negrel/debuggo/cmd/debuggo
 ```
+
+## How it work
+
 
 ### Contributing
 If you want to contribute to Debuggo to add a feature or improve the code contact me at [negrel.dev@protonmail.com](mailto:negrel.dev@protonmail.com), open an [issue](https://github.com/negrel/debuggo/issues) or make a [pull request](https://github.com/negrel/debuggo/pulls).
