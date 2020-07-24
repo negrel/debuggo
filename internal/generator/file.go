@@ -41,6 +41,7 @@ func (f *file) generateContent(release bool) (content []byte, err error) {
 	return
 }
 
+// TODO Edit AST for DebuggoFunction and duplicate const.
 func (f *file) generateDebugContent(buf *bytes.Buffer) error {
 	// Just copy source file
 	path := f.dir + "/" + f.name
@@ -62,103 +63,3 @@ func (f *file) generateReleaseContent(buf *bytes.Buffer) error {
 
 	return nil
 }
-
-// return the signature of a declaration expression
-// func declToString(e ast.Expr) string {
-// 	switch expr := e.(type) {
-// 	case *ast.Ellipsis:
-// 		subType := declToString(expr.Elt)
-// 		return fmt.Sprintf("...%s", subType)
-
-// 	case *ast.InterfaceType:
-// 		fNames := fmtFieldList("%v%v", expr.Methods.List)
-// 		return fmt.Sprintf("interface{%v}", strings.Join(fNames, "\n"))
-
-// 	case *ast.SelectorExpr:
-// 		return fmt.Sprintf("%v.%v", expr.X, expr.Sel)
-
-// 	case *ast.FuncType:
-// 		p := []string{}
-// 		if expr.Params != nil && expr.Params.List != nil {
-// 			p = fmtFieldList("%v %v", expr.Params.List)
-// 		}
-
-// 		params := strings.Join(p, ", ")
-
-// 		r := []string{}
-// 		if expr.Results != nil && expr.Results.List != nil {
-// 			r = fmtFieldList("%v %v", expr.Results.List)
-// 		}
-
-// 		results := ""
-// 		if len := len(r); len != 0 {
-// 			results = r[0]
-// 			if len > 1 {
-// 				results = fmt.Sprintf("(%v)", strings.Join(r, ", "))
-// 			}
-// 		}
-
-// 		return fmt.Sprintf("(%v) %v", params, results)
-
-// 	case *ast.ArrayType:
-// 		arrType := declToString(expr.Elt)
-// 		len := ""
-// 		// Array size (len is nil for slices)
-// 		if expr.Len != nil {
-// 			ident, ok := expr.Len.(*ast.Ident)
-// 			if ok {
-// 				decl := ident.Obj.Decl.(*ast.ValueSpec)
-// 				lit := decl.Values[0].(*ast.BasicLit)
-// 				len = fmt.Sprint(lit.Value)
-// 			}
-
-// 			// Literal
-// 			lit, ok := expr.Len.(*ast.BasicLit)
-// 			if ok {
-// 				len = lit.Value
-// 			}
-// 		}
-
-// 		return fmt.Sprintf("[%v]%v", len, arrType)
-
-// 	// primitive
-// 	default:
-// 		return fmt.Sprint(expr)
-// 	}
-// }
-
-// func getNamesFromField(field *ast.Field) (names []string, fType string) {
-// 	fType = fmt.Sprint(field.Type)
-
-// 	for _, name := range field.Names {
-// 		names = append(names, name.Name)
-// 	}
-
-// 	return
-// }
-
-// func parseFunc(fnType ast.FuncType) (debugFunc string) {
-// 	p := []string{}
-// 	if fnType.Params != nil && fnType.Params.List != nil {
-// 		// p = fmtFieldList("%v %v", fnType.Params.List)
-// 	}
-
-// 	params := strings.Join(p, ", ")
-
-// 	r := []string{}
-// 	if fnType.Results != nil && fnType.Results.List != nil {
-// 		r = fmtFieldList("%v %v", fnType.Results.List)
-// 	}
-
-// 	results := ""
-// 	if len := len(r); len != 0 {
-// 		results = r[0]
-// 		if len > 1 {
-// 			results = fmt.Sprintf("(%v)", strings.Join(r, ", "))
-// 		}
-// 	}
-
-// 	return fmt.Sprintf("(%v) %v", params, results)
-
-// 	return
-// }

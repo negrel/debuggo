@@ -21,6 +21,8 @@ func newParser() *parser {
 // Parse the given ast.file and edit it to remove useless
 // import and top-level function body.
 func (p *parser) parse(f *ast.File) {
+	f.Comments = nil
+
 	for _, d := range f.Decls {
 		switch decl := d.(type) {
 		case *ast.FuncDecl:
@@ -140,15 +142,26 @@ func (p *parser) parseExpr(expr ast.Expr) {
 	case *ast.ArrayType:
 		p.parseExpr(e.Elt)
 
+	case *ast.Ellipsis:
+		p.parseExpr(e.Elt)
+
+	case *ast.MapType:
+		p.parseExpr(e.Key)
+		p.parseExpr(e.Value)
+
+	case *ast.StructType:
+		for _, field := range e.Fields.List {
+			p.parseExpr(field.Type)
+		}
+
+	case *ast.ChanType:
+		p.parseExpr(e.Value)
+
 	case *ast.InterfaceType:
 		// Interface can contain an interface from another
 		// package (e.g fmt.Stringer)
 		for _, method := range e.Methods.List {
 			p.parseExpr(method.Type)
 		}
-
-		// default:
-		// 	fmt.Println(reflect.TypeOf(e))
-		// 	fmt.Printf("%+v\n", e)
 	}
 }
