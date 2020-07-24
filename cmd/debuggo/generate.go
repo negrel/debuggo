@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 
 	debuggo "github.com/negrel/debuggo/internal/generator"
 	"github.com/urfave/cli"
@@ -15,16 +16,19 @@ var generate = cli.Command{
 	UsageText:   "debuggo generate ",
 	Description: "Generate an optimized version (for production) of the given debugging package.",
 	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:      "src-dir",
+			Usage:     "path to the directory that contains source packages.",
+			TakesFile: true,
+		},
 		cli.StringSliceFlag{
 			Name:      "src",
 			Usage:     "path to the source package.",
-			Required:  true,
 			TakesFile: true,
 		},
 		cli.StringSliceFlag{
 			Name:      "tags",
 			Usage:     "build flags is a list of command-line flags to be passed through to the build system's query tool.",
-			Required:  false,
 			TakesFile: true,
 		},
 		cli.StringFlag{
@@ -35,8 +39,24 @@ var generate = cli.Command{
 		},
 	},
 	Action: func(ctx *cli.Context) error {
+		srcDir := ctx.String("src-dir")
+		infos, err := ioutil.ReadDir(srcDir)
+		if err != nil {
+			return err
+		}
+
+		srcPkgs := func() []string {
+			n := make([]string, len(infos))
+
+			for i, info := range infos {
+				n[i] = srcDir + "/" + info.Name()
+			}
+
+			return n
+		}()
+
 		opt := debuggo.Options{
-			PkgPattern: ctx.StringSlice("src"),
+			PkgPattern: append(srcPkgs, ctx.StringSlice("src")...),
 			PkgTags:    ctx.StringSlice("tags"),
 			Output:     ctx.String("output"),
 		}
