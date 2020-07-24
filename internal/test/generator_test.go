@@ -66,16 +66,19 @@ func TestDataSet(t *testing.T) {
 	}
 
 	// Comparing result and expected result
-	for name := range debuggo {
-		debuggoPkg := debuggo[name]
-		resultPkg := result[name]
+	for pkgName := range result {
+		debuggoPkg := debuggo[pkgName]
+		resultPkg := result[pkgName]
 
-		for filename := range debuggoPkg.fset {
-			debuggoFile := debuggoPkg.fset[filename]
+		for filename := range resultPkg.fset {
+			debuggoFile, ok := debuggoPkg.fset[filename]
+			if !ok {
+				t.Fatalf("%v is missing in %v/%v", filename, debuggoDir, pkgName)
+			}
 			resultFile := resultPkg.fset[filename]
 
 			if !bytes.Equal(debuggoFile, resultFile) {
-				t.Fatalf("%v/%v/%v is not equal to %v/%v/%v", debuggoDir, name, filename, resultDir, name, filename)
+				t.Fatalf("%v/%v/%v is not equal to %v/%v/%v", debuggoDir, pkgName, filename, resultDir, pkgName, filename)
 			}
 		}
 	}
