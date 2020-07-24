@@ -14,7 +14,7 @@ import (
 )
 
 // Generate start the build process of debugging package.
-func Generate(opt Options) {
+func Generate(opt Options) []error {
 	gen := generator{
 		outputDir: opt.Output,
 	}
@@ -33,11 +33,7 @@ func Generate(opt Options) {
 
 	wg.Wait()
 
-	fmt.Println()
-
-	for _, err := range gen.errors {
-		fmt.Fprintln(os.Stderr, err)
-	}
+	return gen.errors
 }
 
 // generator is responsible for handling the generation

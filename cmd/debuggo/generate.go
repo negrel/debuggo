@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	debuggo "github.com/negrel/debuggo/internal/generator"
 	"github.com/urfave/cli"
 )
@@ -32,13 +34,20 @@ var generate = cli.Command{
 			TakesFile: true,
 		},
 	},
-	Action: func(ctx *cli.Context) {
+	Action: func(ctx *cli.Context) error {
 		opt := debuggo.Options{
 			PkgPattern: ctx.StringSlice("src"),
 			PkgTags:    ctx.StringSlice("tags"),
 			Output:     ctx.String("output"),
 		}
 
-		debuggo.Generate(opt)
+		errs := debuggo.Generate(opt)
+		e := ""
+
+		for _, err := range errs {
+			e += err.Error() + "\n"
+		}
+
+		return fmt.Errorf(e)
 	},
 }
