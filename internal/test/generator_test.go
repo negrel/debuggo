@@ -3,7 +3,6 @@ package test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -11,34 +10,21 @@ import (
 )
 
 const (
-	dataDir    string = "./_data"
+	dataDir    string = "./_data/src"
 	debuggoDir string = "./result"
 	resultDir  string = "./_data_result"
 )
 
 func TestDataSet(t *testing.T) {
-	// Test Data packages
-	pkgsInfos, err := ioutil.ReadDir(dataDir)
+	gen, err := generator.New(
+		generator.SrcDir(dataDir),
+		generator.OutputDir(debuggoDir),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	pkgs := func() []string {
-		pkgNames := make([]string, len(pkgsInfos))
-
-		for i, info := range pkgsInfos {
-			pkgNames[i] = dataDir + "/" + info.Name()
-		}
-
-		return pkgNames
-	}()
-
-	opt := generator.Options{
-		PkgPattern: pkgs,
-		Output:     debuggoDir,
-	}
-
-	generator.Generate(opt)
+	gen.Start()
 
 	// Comparing expected result and debuggo result.
 	debuggo := make(map[string]*pkg, 8)
