@@ -31,7 +31,7 @@ func isDir(path string) error {
 	return err
 }
 
-func getAllPackages(dir string) ([]*packages.Package, error) {
+func GetAllPackages(dir string) ([]*packages.Package, error) {
 	// Getting packages names
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
@@ -46,7 +46,7 @@ func getAllPackages(dir string) ([]*packages.Package, error) {
 			continue
 		}
 
-		pkgs, err := getAllPackages(filepath.Join(dir, file.Name()))
+		pkgs, err := GetAllPackages(filepath.Join(dir, file.Name()))
 		if err != nil {
 			return nil, err
 		}
@@ -79,7 +79,7 @@ func getAllPackages(dir string) ([]*packages.Package, error) {
 func SrcDir(path string) Option {
 	path = filepath.Clean(path)
 
-	pkgs, err := getAllPackages(path)
+	pkgs, err := GetAllPackages(path)
 	if err != nil {
 		return optionErr(err)
 	}
@@ -101,8 +101,11 @@ func SrcDir(path string) Option {
 func OutputDir(path string) Option {
 	err := isDir(path)
 	if err != nil {
-		return optionErr(err)
+		if _, isPathError := err.(*os.PathError); !isPathError {
+			return optionErr(err)
+		}
 	}
+
 	path, err = filepath.Abs(path)
 	if err != nil {
 		return optionErr(err)
@@ -119,7 +122,7 @@ func OutputDir(path string) Option {
 func CommonDir(path string) Option {
 	path = filepath.Clean(path)
 
-	pkgs, err := getAllPackages(path)
+	pkgs, err := GetAllPackages(path)
 	if err != nil {
 		return optionErr(err)
 	}

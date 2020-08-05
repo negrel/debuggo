@@ -54,12 +54,7 @@ func (gen *Generator) Error() error {
 
 // Start the generation process.
 func (gen *Generator) Start() {
-	gen.generateCommons()
 	gen.generatePackages()
-}
-
-func (gen *Generator) generateCommons() {
-
 }
 
 func (gen *Generator) generatePackages() {
@@ -80,21 +75,27 @@ func (gen *Generator) generateSinglePkg(pkg *packages.Package) {
 	err := mkdirAll(filepath.Join(gen.outputDir, pkg.Name))
 	gen.reportError(err)
 
-	filesPrefix := gen.generateFilesPrefixFor(pkg)
-
+	filesHeader := gen.generateFilesPrefixFor(pkg)
 	gen.addCommonFilesTo(pkg)
 
 	for index, file := range pkg.Syntax {
 		_, filename := filepath.Split(pkg.GoFiles[index])
-		filename = debugFileNameFor(filename)
 
-		buf := bytes.NewBuffer(filesPrefix)
+		// Debug & Production
+		for i := 0; i < 2; i++ {
+			isProduction := i == 1
 
-		gen.editFile(file)
-		_ = printer.Fprint(buf, pkg.Fset, file)
+			if isProduction {
+				filename = debugFileNameFor(filename)
+				gen.editFile(file)
+			}
 
-		outputPath := filepath.Join(gen.outputDir, pkg.Name, filename)
-		_ = ioutil.WriteFile(outputPath, buf.Bytes(), os.ModePerm)
+			buf := bytes.NewBuffer(filesHeader)
+			_ = printer.Fprint(buf, pkg.Fset, file)
+
+			outputPath := filepath.Join(gen.outputDir, pkg.Name, filename)
+			_ = ioutil.WriteFile(outputPath, buf.Bytes(), os.ModePerm)
+		}
 	}
 }
 
