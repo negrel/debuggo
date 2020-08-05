@@ -31,12 +31,12 @@ func removeUnusedImportsOption(e *astEditor) {
 		requiredImports: make([]*ast.ImportSpec, 0, 8),
 	}
 
-	e.beforeEditHooks = append(e.beforeEditHooks, hook.beforeParseHook)
+	e.beforeEditHooks = append(e.beforeEditHooks, hook.beforeEditHook)
 	e.nodeHooks = append(e.nodeHooks, hook.nodeHook)
-	e.afterEditHooks = append(e.afterEditHooks, hook.afterParseHook)
+	e.afterEditHooks = append(e.afterEditHooks, hook.afterEditHook)
 }
 
-func (r *removeUnusedImportsHook) beforeParseHook(file *ast.File) {
+func (r *removeUnusedImportsHook) beforeEditHook(file *ast.File) {
 	r.allImports = file.Imports
 }
 
@@ -67,6 +67,6 @@ func (r *removeUnusedImportsHook) nodeHook(n ast.Node) (recursive bool) {
 	return
 }
 
-func (r *removeUnusedImportsHook) afterParseHook(file *ast.File) {
+func (r *removeUnusedImportsHook) afterEditHook(file *ast.File) {
 	file.Imports = r.requiredImports
 }

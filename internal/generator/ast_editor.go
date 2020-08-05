@@ -38,7 +38,7 @@ func (e *astEditor) edit(file *ast.File) {
 	ast.Inspect(file, func(n ast.Node) (recursive bool) {
 		recursive = true
 
-		// Simulate ast.Inspect for every hook
+		// Simulate ast.Inspect call for every hook
 		for hookIndex, nodeHook := range e.nodeHooks {
 			notRecursiveHook := !nodeHook(n)
 
