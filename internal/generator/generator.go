@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/printer"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -83,16 +84,17 @@ func (gen *Generator) generateSinglePkg(pkg *packages.Package) {
 
 	gen.addCommonFilesTo(pkg)
 
-	for _, file := range pkg.Syntax {
+	for index, file := range pkg.Syntax {
+		_, filename := filepath.Split(pkg.GoFiles[index])
+		filename = debugFileNameFor(filename)
+
 		buf := bytes.NewBuffer(filesPrefix)
 
 		gen.editFile(file)
-		// TODO Print to a file
 		_ = printer.Fprint(buf, pkg.Fset, file)
 
-		//outputPath := filepath.Join(gen.outputDir, pkg.Name, debugFileNameFor(file.Name.Name))
-		//_ = ioutil.WriteFile(outputPath, buf.Bytes(), os.ModePerm)
-		fmt.Println(buf.String())
+		outputPath := filepath.Join(gen.outputDir, pkg.Name, filename)
+		_ = ioutil.WriteFile(outputPath, buf.Bytes(), os.ModePerm)
 	}
 }
 
@@ -103,14 +105,6 @@ func (gen *Generator) editFile(file *ast.File) {
 	)
 
 	editor.edit(file)
-}
-
-func mkdirAll(path string) error {
-	if filepath.Ext(path) != "" {
-		path, _ = filepath.Split(path)
-	}
-
-	return os.MkdirAll(path, os.ModePerm)
 }
 
 // TODO Add support for common subpackage.
@@ -137,61 +131,13 @@ func (gen *Generator) generateFilesPrefixFor(pkg *packages.Package) []byte {
 	return buf.Bytes()
 }
 
-// // Generate the given package.
-// func (gen *Generator) generate(pkg *_package) {
-// 	var modes = [2]bool{false, true}
+func mkdirAll(path string) error {
+	if filepath.Ext(path) != "" {
+		path, _ = filepath.Split(path)
+	}
 
-// 	// Adding common files
-// 	pkg.addFiles(gen.commonFiles)
-
-// 	// Creating OutputDir
-// 	pkgPath := ""
-// 	if filepath.IsAbs(gen.outputDir) {
-// 		pkgPath = gen.outputDir
-// 	} else {
-// 		var err error
-// 		pkgPath, err = filepath.Abs(gen.outputDir)
-// 		if err != nil {
-// 			gen.errors = append(gen.errors, err)
-// 			return
-// 		}
-// 	}
-// 	pkgPath = fmt.Sprintf("%v/%v", pkgPath, pkg.name)
-// 	err := os.MkdirAll(pkgPath, os.ModePerm)
-// 	if err != nil {
-// 		gen.errors = append(gen.errors)
-// 		return
-// 	}
-
-// 	for _, file := range pkg.files {
-
-// 		for _, release := range modes {
-// 			content, err := file.generateContent(release)
-// 			if err != nil {
-// 				gen.errors = append(gen.errors, err)
-// 				continue
-// 			}
-
-// 			filename := file.name
-// 			if !release {
-// 				if ext := filepath.Ext(filename); ext != ".go" {
-// 					continue
-// 				}
-
-// 				filename = filename[:len(filename)-3]
-// 				filename += ".debug.go"
-// 			}
-
-// 			path := fmt.Sprintf("%v/%v", pkgPath, filename)
-
-// 			err = ioutil.WriteFile(path, content, 0644)
-// 			if err != nil {
-// 				gen.errors = append(gen.errors, err)
-// 				continue
-// 			}
-// 		}
-// 	}
-// }
+	return os.MkdirAll(path, os.ModePerm)
+}
 
 func debugFileNameFor(originalName string) string {
 	filename := strings.Join(strings.Split(originalName, ".go"), "")
