@@ -1,10 +1,10 @@
 package generator
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
-	"io/ioutil"
-	"log"
+	"go/ast"
+	"go/printer"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,108 +13,189 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-// Generate start the build process of debugging package.
-func Generate(opt Options) []error {
-	gen := generator{
-		outputDir: opt.Output,
-	}
-	pkgs := gen.parsePackages(opt.PkgPattern, opt.PkgTags)
+// Generator is responsible for handling the generation
+// process of the packages.
+type Generator struct {
+	packages   []*packages.Package
+	commonPkgs []*packages.Package
+	errors     []error
+	outputDir  string
+}
 
-	// Generate in a separate goroutine the
-	// debugging packages.
+// New return a new debugging package generator.
+func New(opts ...Option) (*Generator, error) {
+	gen := &Generator{
+		errors: make([]error, 0, 8),
+	}
+
+	for _, opt := range opts {
+		err := opt(gen)
+		if err != nil {
+			return gen, err
+		}
+	}
+
+	return gen, nil
+}
+
+func (gen *Generator) Error() error {
+	if len(gen.errors) == 0 {
+		return nil
+	}
+
+	err := fmt.Sprintf("%v error(s) occured during code generation :", len(gen.errors))
+	for _, e := range gen.errors {
+		err = fmt.Sprintf("%v\n	%v", err, e)
+	}
+
+	return fmt.Errorf(err)
+}
+
+// Start the generation process.
+func (gen *Generator) Start() {
+	gen.generateCommons()
+	gen.generatePackages()
+}
+
+func (gen *Generator) generateCommons() {
+
+}
+
+func (gen *Generator) generatePackages() {
 	var wg sync.WaitGroup
-	for _, pkg := range pkgs {
-		wg.Add(1)
-		go func(pkg *Package) {
-			gen.generate(pkg)
+	wg.Add(len(gen.packages))
+
+	for _, pkg := range gen.packages {
+		go func(pkg *packages.Package) {
+			gen.generateSinglePkg(pkg)
 			wg.Done()
 		}(pkg)
 	}
 
 	wg.Wait()
-
-	return gen.errors
 }
 
-// generator is responsible for handling the generation
-// process of the packages.
-type generator struct {
-	errors    []error
-	outputDir string
+func (gen *Generator) generateSinglePkg(pkg *packages.Package) {
+	err := mkdirAll(filepath.Join(gen.outputDir, pkg.Name))
+	gen.reportError(err)
+
+	filesPrefix := gen.generateFilesPrefixFor(pkg)
+
+	gen.addCommonFilesTo(pkg)
+
+	for _, file := range pkg.Syntax {
+		buf := bytes.NewBuffer(filesPrefix)
+
+		gen.editFile(file)
+		// TODO Print to a file
+		_ = printer.Fprint(buf, pkg.Fset, file)
+
+		//outputPath := filepath.Join(gen.outputDir, pkg.Name, debugFileNameFor(file.Name.Name))
+		//_ = ioutil.WriteFile(outputPath, buf.Bytes(), os.ModePerm)
+		fmt.Println(buf.String())
+	}
 }
 
-// parsePackage find package and return an array of Package.
-func (gen *generator) parsePackages(patterns []string, tags []string) []*Package {
-	cnf := &packages.Config{
-		Mode:       packages.LoadSyntax,
-		Tests:      false,
-		BuildFlags: []string{fmt.Sprintf("-tags=%s", strings.Join(tags, " "))},
-	}
+func (gen *Generator) editFile(file *ast.File) {
+	editor := newAstEditor(
+		removePkgLevelFuncBodyOption,
+		removeUnusedImportsOption,
+	)
 
-	pkgs, err := packages.Load(cnf, patterns...)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Package object to return
-	rPkgs := make([]*Package, 0, len(pkgs))
-
-	for _, pkg := range pkgs {
-		// We don't generate the package if it contain any error.
-		for _, pkgError := range pkg.Errors {
-			gen.errors = append(gen.errors, errors.New(pkgError.Error()))
-		}
-
-		rPkgs = append(rPkgs, NewPackage(pkg))
-	}
-
-	return rPkgs
+	editor.edit(file)
 }
 
-// Generate the given debugging package.
-func (gen *generator) generate(pkg *Package) {
-	var modes = [2]bool{false, true}
-
-	// Creating OutputDir
-	pkgPath := ""
-	if filepath.IsAbs(gen.outputDir) {
-		pkgPath = gen.outputDir
-	} else {
-		var err error
-		pkgPath, err = filepath.Abs(gen.outputDir)
-		if err != nil {
-			gen.errors = append(gen.errors, err)
-			return
-		}
+func mkdirAll(path string) error {
+	if filepath.Ext(path) != "" {
+		path, _ = filepath.Split(path)
 	}
-	pkgPath = fmt.Sprintf("%v/%v", pkgPath, pkg.name)
-	err := os.MkdirAll(pkgPath, os.ModePerm)
-	if err != nil {
-		gen.errors = append(gen.errors)
+
+	return os.MkdirAll(path, os.ModePerm)
+}
+
+// TODO Add support for common subpackage.
+func (gen *Generator) addCommonFilesTo(pkg *packages.Package) {
+	for _, cmnPkg := range gen.commonPkgs {
+		pkg.Syntax = append(pkg.Syntax, cmnPkg.Syntax...)
+		pkg.GoFiles = append(pkg.GoFiles, cmnPkg.GoFiles...)
+	}
+}
+
+func (gen *Generator) reportError(err error) {
+	if err == nil {
 		return
 	}
 
-	for _, file := range pkg.files {
-		for _, release := range modes {
-			content, err := file.generateContent(release)
-			if err != nil {
-				gen.errors = append(gen.errors, err)
-				continue
-			}
+	gen.errors = append(gen.errors, err)
+}
 
-			filename := file.name
-			if !release {
-				filename = strings.Join(strings.Split(filename, ".go"), "")
-				filename += ".debug.go"
-			}
+func (gen *Generator) generateFilesPrefixFor(pkg *packages.Package) []byte {
+	buf := &bytes.Buffer{}
+	buf.WriteString("// Code generated by Debuggo. DO NOT EDIT.\n\n")
+	buf.WriteString("// +build !" + pkg.Name + "\n\n")
 
-			path := fmt.Sprintf("%v/%v", pkgPath, filename)
+	return buf.Bytes()
+}
 
-			err = ioutil.WriteFile(path, content, 0644)
-			if err != nil {
-				gen.errors = append(gen.errors, err)
-				continue
-			}
-		}
-	}
+// // Generate the given package.
+// func (gen *Generator) generate(pkg *_package) {
+// 	var modes = [2]bool{false, true}
+
+// 	// Adding common files
+// 	pkg.addFiles(gen.commonFiles)
+
+// 	// Creating OutputDir
+// 	pkgPath := ""
+// 	if filepath.IsAbs(gen.outputDir) {
+// 		pkgPath = gen.outputDir
+// 	} else {
+// 		var err error
+// 		pkgPath, err = filepath.Abs(gen.outputDir)
+// 		if err != nil {
+// 			gen.errors = append(gen.errors, err)
+// 			return
+// 		}
+// 	}
+// 	pkgPath = fmt.Sprintf("%v/%v", pkgPath, pkg.name)
+// 	err := os.MkdirAll(pkgPath, os.ModePerm)
+// 	if err != nil {
+// 		gen.errors = append(gen.errors)
+// 		return
+// 	}
+
+// 	for _, file := range pkg.files {
+
+// 		for _, release := range modes {
+// 			content, err := file.generateContent(release)
+// 			if err != nil {
+// 				gen.errors = append(gen.errors, err)
+// 				continue
+// 			}
+
+// 			filename := file.name
+// 			if !release {
+// 				if ext := filepath.Ext(filename); ext != ".go" {
+// 					continue
+// 				}
+
+// 				filename = filename[:len(filename)-3]
+// 				filename += ".debug.go"
+// 			}
+
+// 			path := fmt.Sprintf("%v/%v", pkgPath, filename)
+
+// 			err = ioutil.WriteFile(path, content, 0644)
+// 			if err != nil {
+// 				gen.errors = append(gen.errors, err)
+// 				continue
+// 			}
+// 		}
+// 	}
+// }
+
+func debugFileNameFor(originalName string) string {
+	filename := strings.Join(strings.Split(originalName, ".go"), "")
+	filename += ".debug.go"
+
+	return filename
 }

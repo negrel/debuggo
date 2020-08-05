@@ -1,10 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"io/ioutil"
-
-	debuggo "github.com/negrel/debuggo/internal/generator"
+	"github.com/negrel/debuggo/internal/generator"
 	"github.com/urfave/cli"
 )
 
@@ -20,11 +17,7 @@ var generate = cli.Command{
 			Name:      "src-dir",
 			Usage:     "path to the directory that contains source packages.",
 			TakesFile: true,
-		},
-		cli.StringSliceFlag{
-			Name:      "src",
-			Usage:     "path to the source package.",
-			TakesFile: true,
+			Required:  true,
 		},
 		cli.StringSliceFlag{
 			Name:      "tags",
@@ -32,42 +25,28 @@ var generate = cli.Command{
 			TakesFile: true,
 		},
 		cli.StringFlag{
-			Name:      "output",
+			Name:      "out-dir",
 			Usage:     "output directory",
-			Value:     "../",
+			Value:     "../debug",
 			TakesFile: true,
 		},
 	},
 	Action: func(ctx *cli.Context) error {
 		srcDir := ctx.String("src-dir")
-		infos, err := ioutil.ReadDir(srcDir)
+		outDir := ctx.String("out-dir")
+		commonDir := ctx.String("src-dir") + "../common"
+
+		gen, err := generator.New(
+			generator.SrcDir(srcDir),
+			generator.OutputDir(outDir),
+			generator.CommonDir(commonDir),
+		)
 		if err != nil {
 			return err
 		}
 
-		srcPkgs := func() []string {
-			n := make([]string, len(infos))
+		gen.Start()
 
-			for i, info := range infos {
-				n[i] = srcDir + "/" + info.Name()
-			}
-
-			return n
-		}()
-
-		opt := debuggo.Options{
-			PkgPattern: append(srcPkgs, ctx.StringSlice("src")...),
-			PkgTags:    ctx.StringSlice("tags"),
-			Output:     ctx.String("output"),
-		}
-
-		errs := debuggo.Generate(opt)
-		e := ""
-
-		for _, err := range errs {
-			e += err.Error() + "\n"
-		}
-
-		return fmt.Errorf(e)
+		return gen.Error()
 	},
 }
