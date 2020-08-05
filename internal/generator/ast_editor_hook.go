@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	"go/ast"
 	"strings"
 )
@@ -17,6 +18,10 @@ func removePkgLevelFuncBody(file *ast.File) {
 		}
 
 		decl.Body.List = []ast.Stmt{}
+
+		if isExported, returnSomething := ast.IsExported(decl.Name.Name), decl.Type.Results != nil; isExported && returnSomething {
+			panic(fmt.Sprintf("exported function '%v' shouldn't return any value", decl.Name.Name))
+		}
 	}
 }
 
