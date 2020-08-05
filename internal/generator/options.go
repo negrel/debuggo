@@ -2,7 +2,6 @@ package generator
 
 import (
 	"fmt"
-	"go/printer"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -91,13 +90,6 @@ func SrcDir(path string) Option {
 		}
 
 		// Adding packages
-		for _, pkg := range pkgs {
-			for i, file := range pkg.Syntax {
-				_ = printer.Fprint(os.Stdout, pkg.Fset, file)
-
-				_, file.Name.Name = filepath.Split(pkg.GoFiles[i])
-			}
-		}
 		gen.packages = append(gen.packages, pkgs...)
 
 		return err
