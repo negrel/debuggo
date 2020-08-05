@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/urfave/cli"
@@ -25,15 +26,9 @@ func main() {
 		generate,
 	}
 	app.EnableBashCompletion = true
+	app.ExitErrHandler = func(context *cli.Context, err error) {
+		_, _ = fmt.Fprint(os.Stderr, err)
+	}
 
-	// opt := debuggo.Options{
-	// 	PkgPattern: []string{"../../debuggo.example/helloworld/internal/debuggo/person"},
-	// 	PkgTags:    []string{},
-	// 	Output:     "../",
-	// 	OutputDir:  "debug",
-	// }
-
-	// debuggo.Generate(opt)
-
-	app.Run(os.Args)
+	_ = app.Run(os.Args)
 }
