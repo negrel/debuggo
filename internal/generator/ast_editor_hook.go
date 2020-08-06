@@ -73,5 +73,17 @@ func (r *removeUnusedImportsHook) nodeHook(n ast.Node) (recursive bool) {
 }
 
 func (r *removeUnusedImportsHook) afterEditHook(file *ast.File) {
-	file.Imports = r.requiredImports
+	var p []*ast.ImportSpec
+	//file.Imports = r.requiredImports
+	file.Imports = p
+}
+
+func sanitizeOption(e *astEditor) {
+	e.afterEditHooks = append(e.afterEditHooks, sanitizeHook)
+}
+
+func sanitizeHook(file *ast.File) {
+	ast.FilterFile(file, func(decl string) bool {
+		return true
+	})
 }

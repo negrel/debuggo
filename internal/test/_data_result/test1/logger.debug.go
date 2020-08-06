@@ -5,9 +5,13 @@
 package test1
 
 import (
-	// fmt is used in function parameters.
 	"fmt"
 )
+
+// fmt is used in function parameters.
+
+// Log package is only used in function body,
+// so it should be removed by debuggo.
 
 // Println calls Output to print to the standard
 // logger. Arguments are handled in the manner of
