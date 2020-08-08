@@ -111,6 +111,7 @@ func (gen *Generator) editFile(file *ast.File) {
 	editor := newAstEditor(
 		removePkgLevelFuncBodyOption,
 		removeUnusedImportsOption,
+		removeCommentsOption,
 	)
 
 	editor.edit(file)

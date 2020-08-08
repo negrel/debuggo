@@ -88,12 +88,19 @@ func (r *removeUnusedImportsHook) afterEditHook(file *ast.File) {
 	}
 }
 
-func sanitizeOption(e *astEditor) {
-	e.afterEditHooks = append(e.afterEditHooks, sanitizeHook)
+func removeCommentsOption(e *astEditor) {
+	e.nodeHooks = append(e.nodeHooks, removeComments)
 }
 
-func sanitizeHook(file *ast.File) {
-	ast.FilterFile(file, func(decl string) bool {
-		return true
-	})
+func removeComments(n ast.Node) (recursive bool) {
+	recursive = true
+
+	cgroup, ok := n.(*ast.CommentGroup)
+	if !ok {
+		return
+	}
+
+	cgroup.List = []*ast.Comment{}
+
+	return
 }
