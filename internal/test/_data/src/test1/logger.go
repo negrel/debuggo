@@ -3,9 +3,11 @@ package test1
 import (
 	// fmt is used in function parameters.
 	"fmt"
-	// Log package is only used in function body,
-	// so it should be removed by debuggo.
+
+	// Log & math package are only used in function body,
+	// so it should be removed by Debuggo.
 	"log"
+	"math"
 )
 
 // Println calls Output to print to the standard
@@ -13,4 +15,8 @@ import (
 // fmt.Println.
 func Println(a ...fmt.Stringer) {
 	log.Println(a)
+}
+
+func PrintPi() {
+	log.Println(math.Pi)
 }
