@@ -41,11 +41,13 @@ var generate = cli.Command{
 		outDir := ctx.String("out-dir")
 		commonDir := ctx.String("cmn-dir")
 
-		gen, err := generator.New(
-			generator.SrcDir(srcDir),
-			generator.OutputDir(outDir),
-			generator.CommonDir(commonDir),
-		)
+		options := make([]generator.Option, 0, 3)
+		options = append(options, generator.SrcDir(srcDir), generator.OutputDir(outDir))
+		if commonDir != "" {
+			options = append(options, generator.CommonDir(commonDir))
+		}
+
+		gen, err := generator.New(options...)
 		if err != nil {
 			return err
 		}
