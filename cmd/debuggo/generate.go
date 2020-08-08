@@ -19,6 +19,11 @@ var generate = cli.Command{
 			TakesFile: true,
 			Required:  true,
 		},
+		cli.StringFlag{
+			Name:      "cmn-dir",
+			Usage:     "common directory",
+			TakesFile: true,
+		},
 		cli.StringSliceFlag{
 			Name:      "tags",
 			Usage:     "build flags is a list of command-line flags to be passed through to the build system's query tool.",
@@ -34,7 +39,7 @@ var generate = cli.Command{
 	Action: func(ctx *cli.Context) error {
 		srcDir := ctx.String("src-dir")
 		outDir := ctx.String("out-dir")
-		commonDir := ctx.String("src-dir") + "../common"
+		commonDir := ctx.String("cmn-dir")
 
 		gen, err := generator.New(
 			generator.SrcDir(srcDir),
