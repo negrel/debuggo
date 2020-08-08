@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/printer"
 	"io/ioutil"
 	"os"
@@ -97,9 +98,11 @@ func (gen *Generator) generateSinglePkg(pkg *packages.Package) {
 
 			err = printer.Fprint(buf, pkg.Fset, file)
 			gen.reportError(err)
+			generatedOutput, err := format.Source(buf.Bytes())
+			gen.reportError(err)
 
 			outputPath := filepath.Join(gen.outputDir, pkg.Name, filename)
-			_ = ioutil.WriteFile(outputPath, buf.Bytes(), os.ModePerm)
+			_ = ioutil.WriteFile(outputPath, generatedOutput, os.ModePerm)
 		}
 	}
 }
@@ -107,7 +110,7 @@ func (gen *Generator) generateSinglePkg(pkg *packages.Package) {
 func (gen *Generator) editFile(file *ast.File) {
 	editor := newAstEditor(
 		removePkgLevelFuncBodyOption,
-		sanitizeOption,
+		removeUnusedImportsOption,
 	)
 
 	editor.edit(file)
