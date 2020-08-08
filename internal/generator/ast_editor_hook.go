@@ -3,6 +3,7 @@ package generator
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 	"strings"
 )
 
@@ -27,13 +28,13 @@ func removePkgLevelFuncBody(file *ast.File) {
 
 type removeUnusedImportsHook struct {
 	allImports      []*ast.ImportSpec
-	requiredImports []*ast.ImportSpec
+	requiredImports []ast.Spec
 }
 
 func removeUnusedImportsOption(e *astEditor) {
 	hook := &removeUnusedImportsHook{
-		allImports:      make([]*ast.ImportSpec, 0, 8),
-		requiredImports: make([]*ast.ImportSpec, 0, 8),
+		allImports:      make([]*ast.ImportSpec, 0),
+		requiredImports: make([]ast.Spec, 0),
 	}
 
 	e.beforeEditHooks = append(e.beforeEditHooks, hook.beforeEditHook)
@@ -73,9 +74,18 @@ func (r *removeUnusedImportsHook) nodeHook(n ast.Node) (recursive bool) {
 }
 
 func (r *removeUnusedImportsHook) afterEditHook(file *ast.File) {
-	var p []*ast.ImportSpec
-	//file.Imports = r.requiredImports
-	file.Imports = p
+	for _, d := range file.Decls {
+		decl, ok := d.(*ast.GenDecl)
+		if !ok {
+			continue
+		}
+
+		if decl.Tok != token.IMPORT {
+			continue
+		}
+
+		decl.Specs = r.requiredImports
+	}
 }
 
 func sanitizeOption(e *astEditor) {
