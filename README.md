@@ -39,7 +39,7 @@ your debugging packages.
 Let's write our own `assert` function now:
 
 ### Assert package
-The following example is inspired by the [***assert***](https://dart.dev/guides/language/language-tour#assert) function
+The following example is inspired by the [**`assert`**](https://dart.dev/guides/language/language-tour#assert) function
 from the Dart language:
 
 ```go
@@ -101,6 +101,13 @@ $ go run .
 $ go run -tags assert .
 ```
 The **name** of your **debugging package** define the build tag to enable it. 
+
+
+## TODO
+
+- [ ] Custom function for production build.
+- [ ] Placeholder variable to customize package (e.g `debuggo.PkgName`)
+- [ ] Detect source file change to regenerate package
 
 ### Contributing
 If you want to contribute to Debuggo to add a feature or improve the code contact me at
