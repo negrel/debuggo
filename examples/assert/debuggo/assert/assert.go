@@ -1,7 +1,8 @@
-package assert
+package debug
 
-func Equal(ok bool, panicMsg string) {
-	if !ok {
+// AssertTrue function assert that the given boolean is true.
+func AssertTrue(isTrue bool, panicMsg string) {
+	if !isTrue {
 		panic(panicMsg)
 	}
 }
