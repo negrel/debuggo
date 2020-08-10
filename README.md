@@ -38,7 +38,7 @@ your debugging packages.
 
 Let's write our own `assert` function now:
 
-### Assert package
+### Simple assert package
 The following example is inspired by the [**`assert`**](https://dart.dev/guides/language/language-tour#assert) function
 from the Dart language:
 
@@ -58,7 +58,7 @@ Then we can generate a new package with the following command:
 ```bash
 # The ./debuggo/src is the source directory for the generator
 # The ./debug/ is the output directory of the generator 
-$ debuggo gen --src-dir ./debuggo/src/ --out-dir ./debug/
+debuggo gen --src-dir ./debuggo/src/ --out-dir ./debug/
 ``` 
 
 or using `go generate` with a file containing the following comment:
@@ -84,24 +84,35 @@ import (
 )
 
 func main() {
-  path := getPath()
-  assert.True(filepath.IsAbs(path),
-    fmt.Sprintf("%v should be an absolute path", path),
+  relativePath := getPath()
+  assert.True(filepath.IsAbs(relativePath),
+    fmt.Sprintf("%v should be an absolute path", relativePath),
   )
   // ...
 }
 ```
 
-If we run the program written above, the `assert.True` call will be removed and the program will not panic. If we want
-to enable assertions of the `assert` package, we must use the `assert` build tag:
-```bash
-# Run the program
-$ go run .
-# Run the program with assertions enabled
-$ go run -tags assert .
-```
-The **name** of your **debugging package** define the build tag to enable it. 
+Now, if we run the program, even if the path is relative, the program will **not** panic. The reason is that we need to 
+**enable** assertions, to do this we need to add a **build tag** when we **run/compile** the program:
 
+```bash
+# `assert` build tag
+#        ┌--┴--┐
+#        |     |
+#        |     |
+#        v     v
+go run -tags assert .
+
+panic: ./your/path/ should be an absolute path
+
+goroutine 1 [running]:
+github.com/negrel/beta/assert.True(...)
+	/home/negrel/code/golang/src/github.com/negrel/beta/assert/assert.go:9
+main.main()
+	/home/negrel/code/golang/src/github.com/negrel/beta/main.go:10 +0x87
+exit status 2
+```
+As you may have notice, the build tag is the name of your package.
 
 ## TODO
 
