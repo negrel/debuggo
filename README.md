@@ -1,5 +1,7 @@
 # :small_red_triangle: Debuggo
 
+![travis-ci status](https://travis-ci.org/negrel/debuggo.svg?branch=master)
+
 *Debuggo generate optimized debugging packages for minimal performance / size overhead in production.*
 
 ## Installation
