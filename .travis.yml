@@ -9,6 +9,7 @@ env:
 script:
   - go vet ./...
   - go install github.com/negrel/debuggo/cmd/debuggo
+  - go generate ./...
   - ./ci/check_go_generate.sh
   - ./ci/check_go_fmt.sh
   - ./ci/check_go_lint.sh
