@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+var allAstEditorOptions = []astEditorOption{
+	removePkgLevelFuncBodyOption,
+	removeUnusedImportsOption,
+	removeUnattachedCommentsOption,
+}
+
 func removePkgLevelFuncBodyOption(e *astEditor) {
 	e.beforeEditHooks = append(e.beforeEditHooks, removePkgLevelFuncBody)
 }
@@ -18,21 +24,23 @@ func removePkgLevelFuncBody(file *ast.File) {
 			continue
 		}
 
-		decl.Body.List = []ast.Stmt{}
+		if isExported := ast.IsExported(decl.Name.Name); isExported {
+			if returnSomething := decl.Type.Results != nil; returnSomething {
+				panic(fmt.Sprintf("exported function '%v' shouldn't return any value", decl.Name.Name))
+			}
 
-		if isExported, returnSomething := ast.IsExported(decl.Name.Name), decl.Type.Results != nil; isExported && returnSomething {
-			panic(fmt.Sprintf("exported function '%v' shouldn't return any value", decl.Name.Name))
+			decl.Body.List = []ast.Stmt{}
 		}
 	}
 }
 
-type removeUnusedImportsHook struct {
+type unusedImportsRemover struct {
 	allImports      []*ast.ImportSpec
 	requiredImports []ast.Spec
 }
 
 func removeUnusedImportsOption(e *astEditor) {
-	hook := &removeUnusedImportsHook{
+	hook := &unusedImportsRemover{
 		allImports:      make([]*ast.ImportSpec, 0),
 		requiredImports: make([]ast.Spec, 0),
 	}
@@ -42,11 +50,11 @@ func removeUnusedImportsOption(e *astEditor) {
 	e.afterEditHooks = append(e.afterEditHooks, hook.afterEditHook)
 }
 
-func (r *removeUnusedImportsHook) beforeEditHook(file *ast.File) {
+func (r *unusedImportsRemover) beforeEditHook(file *ast.File) {
 	r.allImports = file.Imports
 }
 
-func (r *removeUnusedImportsHook) nodeHook(n ast.Node) (recursive bool) {
+func (r *unusedImportsRemover) nodeHook(n ast.Node) (recursive bool) {
 	recursive = true
 
 	ident, ok := n.(*ast.Ident)
@@ -73,7 +81,7 @@ func (r *removeUnusedImportsHook) nodeHook(n ast.Node) (recursive bool) {
 	return
 }
 
-func (r *removeUnusedImportsHook) afterEditHook(file *ast.File) {
+func (r *unusedImportsRemover) afterEditHook(file *ast.File) {
 	for _, d := range file.Decls {
 		decl, ok := d.(*ast.GenDecl)
 		if !ok {
@@ -85,22 +93,14 @@ func (r *removeUnusedImportsHook) afterEditHook(file *ast.File) {
 		}
 
 		decl.Specs = r.requiredImports
+		break
 	}
 }
 
-func removeCommentsOption(e *astEditor) {
-	e.nodeHooks = append(e.nodeHooks, removeComments)
+func removeUnattachedCommentsOption(e *astEditor) {
+	e.afterEditHooks = append(e.afterEditHooks, removeUnattachedComments)
 }
 
-func removeComments(n ast.Node) (recursive bool) {
-	recursive = true
-
-	cgroup, ok := n.(*ast.CommentGroup)
-	if !ok {
-		return
-	}
-
-	cgroup.List = []*ast.Comment{}
-
-	return
+func removeUnattachedComments(file *ast.File) {
+	file.Comments = nil
 }

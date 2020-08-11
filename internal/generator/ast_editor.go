@@ -4,11 +4,15 @@ import (
 	"go/ast"
 )
 
+type fileEditor interface {
+	edit(file *ast.File)
+}
+
 type nodeHook = func(n ast.Node) bool
 
 type fileHook = func(f *ast.File)
 
-type astEditorOption = func(*astEditor)
+type astEditorOption = func(editor *astEditor)
 
 type astEditor struct {
 	nodeHooks       []nodeHook
@@ -16,18 +20,18 @@ type astEditor struct {
 	afterEditHooks  []fileHook
 }
 
-func newAstEditor(options ...astEditorOption) *astEditor {
-	p := &astEditor{
+func newAstEditor(options ...astEditorOption) fileEditor {
+	e := &astEditor{
 		nodeHooks:       make([]nodeHook, 0, 8),
 		beforeEditHooks: make([]fileHook, 0, 8),
 		afterEditHooks:  make([]fileHook, 0, 8),
 	}
 
 	for _, option := range options {
-		option(p)
+		option(e)
 	}
 
-	return p
+	return e
 }
 
 func (e *astEditor) edit(file *ast.File) {
