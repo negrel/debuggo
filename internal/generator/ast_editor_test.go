@@ -94,3 +94,30 @@ func TestUnusedImportsRemover(t *testing.T) {
 		}
 	}
 }
+
+func TestUnattachedCommentsRemover(t *testing.T) {
+	editor := newAstEditor(removeUnattachedCommentsOption)
+
+	for _, test := range newAstEditorTests("unattached_comments") {
+		for i, srcFile := range test.srcPkg.Syntax {
+			editor.edit(srcFile)
+			outFile := test.outPkg.Syntax[i]
+
+			got := &bytes.Buffer{}
+			err := printer.Fprint(got, test.srcPkg.Fset, srcFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			expected := &bytes.Buffer{}
+			err = printer.Fprint(expected, test.outPkg.Fset, outFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(expected.String(), got.String()); diff != "" {
+				t.Errorf("editor doesn't generate the expected result:\n%s", diff)
+			}
+		}
+	}
+}
