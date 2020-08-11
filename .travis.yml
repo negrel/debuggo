@@ -6,11 +6,13 @@ go:
 env:
   - GO111MODULES=on
 
-script:
+before_script:
   - go get -u golang.org/x/lint/golint
+  - go install github.com/negrel/debuggo/cmd/debuggo
+
+script:
   - go vet ./...
   - go build ./...
-  - go install github.com/negrel/debuggo/cmd/debuggo
   - ./ci/check_go_generate.sh
   - ./ci/check_go_fmt.sh
   - ./ci/check_go_lint.sh
