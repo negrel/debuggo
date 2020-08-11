@@ -20,6 +20,12 @@ var generate = cli.Command{
 			Required:  true,
 		},
 		cli.StringFlag{
+			Name:      "src-file",
+			Usage:     "path to a Go file.",
+			TakesFile: true,
+			Required:  true,
+		},
+		cli.StringFlag{
 			Name:      "cmn-dir",
 			Usage:     "common directory",
 			TakesFile: true,

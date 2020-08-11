@@ -78,7 +78,6 @@ func (gen *Generator) generateSinglePkg(pkg *packages.Package) {
 	gen.addCommonFilesTo(pkg)
 
 	for index, file := range pkg.Syntax {
-
 		// Debug & Production
 		for i := 0; i < 2; i++ {
 			isProduction := i == 1
@@ -111,13 +110,12 @@ func (gen *Generator) editFile(file *ast.File) {
 	editor := newAstEditor(
 		removePkgLevelFuncBodyOption,
 		removeUnusedImportsOption,
-		removeCommentsOption,
+		removeUnattachedCommentsOption,
 	)
 
 	editor.edit(file)
 }
 
-// TODO Add support for common subpackage.
 func (gen *Generator) addCommonFilesTo(pkg *packages.Package) {
 	for _, cmnPkg := range gen.commonPkgs {
 		pkg.Syntax = append(pkg.Syntax, cmnPkg.Syntax...)
