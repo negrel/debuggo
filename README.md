@@ -17,7 +17,7 @@ Recently, I was looking at the source code of [flutter](https://flutter.dev/) to
 going on inside. In the codebase, I discovered the `assert` function of dart, `assert` is used everywhere in
 flutter, every single **class** use it at least once.
 
-*Definition of assert from [dart.(https://flutter.dev/)dev](https://dart.dev/guides/language/language-tour#assert)* :
+*Definition of assert from [dart.dev](https://dart.dev/guides/language/language-tour#assert)* :
 
 > During development, use an assert statement — `assert(condition, optionalMessage)`; — to disrupt normal execution if a
 >boolean condition is false.

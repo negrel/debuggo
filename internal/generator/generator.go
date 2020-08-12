@@ -27,11 +27,7 @@ type Generator struct {
 // New return a new debugging package generator.
 func New(opts ...Option) (*Generator, error) {
 	gen := &Generator{
-		editor: newAstEditor(
-			removePkgLevelFuncBodyOption,
-			removeUnusedImportsOption,
-			removeUnattachedCommentsOption,
-		),
+		editor: newAstEditor(allAstEditorOptions...),
 		errors: make([]error, 0, 8),
 	}
 

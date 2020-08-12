@@ -25,11 +25,11 @@ func removePkgLevelFuncBody(file *ast.File) {
 		}
 
 		if isExported := ast.IsExported(decl.Name.Name); isExported {
+			decl.Body.List = []ast.Stmt{}
+
 			if returnSomething := decl.Type.Results != nil; returnSomething {
 				panic(fmt.Sprintf("exported function '%v' shouldn't return any value", decl.Name.Name))
 			}
-
-			decl.Body.List = []ast.Stmt{}
 		}
 	}
 }
