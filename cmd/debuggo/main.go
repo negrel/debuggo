@@ -9,7 +9,7 @@ import (
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "🔺 Debuggo"
+	app.Name = "Debuggo"
 	app.Usage = "Optimized debugging package generator."
 	app.Description = `Debuggo generate an optimized debugging package for minimal
 	 performance / size overhead in production.`

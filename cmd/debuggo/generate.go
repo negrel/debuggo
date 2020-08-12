@@ -58,8 +58,6 @@ var generate = cli.Command{
 			return err
 		}
 
-		gen.Start()
-
-		return gen.Error()
+		return gen.Start()
 	},
 }
