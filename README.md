@@ -1,6 +1,7 @@
 # :small_red_triangle: Debuggo
 
 ![travis-ci status](https://travis-ci.org/negrel/debuggo.svg?branch=master)
+[![codebeat badge](https://codebeat.co/badges/9ae45e94-287c-4fcd-9434-0f403657023e)](https://codebeat.co/projects/github-com-negrel-debuggo-master)
 
 *Debuggo generate optimized debugging packages for minimal performance / size overhead in production.*
 
