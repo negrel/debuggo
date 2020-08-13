@@ -4,6 +4,7 @@ import (
 	"go/ast"
 )
 
+// FileEditor define any object that can edit an ast.File.
 type FileEditor interface {
 	edit(file *ast.File)
 }
