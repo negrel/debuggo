@@ -4,7 +4,7 @@ import (
 	"go/ast"
 )
 
-type fileEditor interface {
+type FileEditor interface {
 	edit(file *ast.File)
 }
 
@@ -20,7 +20,7 @@ type astEditor struct {
 	afterEditHooks  []fileHook
 }
 
-func newAstEditor(options ...astEditorOption) fileEditor {
+func newAstEditor(options ...astEditorOption) FileEditor {
 	e := &astEditor{
 		nodeHooks:       make([]nodeHook, 0, 8),
 		beforeEditHooks: make([]fileHook, 0, 8),

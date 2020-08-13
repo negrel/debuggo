@@ -2,9 +2,13 @@ package generator
 
 import (
 	"bytes"
+	"fmt"
 	"go/ast"
 	"go/printer"
 	"log"
+	"reflect"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -12,42 +16,57 @@ import (
 )
 
 type astEditorTest struct {
-	srcPkg      *packages.Package
-	outPkg      *packages.Package
-	shouldPanic bool
+	srcPkg *packages.Package
+	outPkg *packages.Package
 }
 
 func newAstEditorTests(path string) (astEditorTests []astEditorTest) {
-	srcPkgs, err := getAllPackagesIn("./_test/editor/" + path + "/src")
+	srcPkgs, err := getAllPackagesIn("./_test/editor/" + path + "/success/src")
 	if err != nil {
 		log.Fatal(err)
 	}
-	outPkgs, err := getAllPackagesIn("./_test/editor/" + path + "/result")
+	outPkgs, err := getAllPackagesIn("./_test/editor/" + path + "/success/result")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, srcPkg := range srcPkgs {
-		outPkg := findPkgIn(srcPkg.Name, outPkgs)
+	for i, srcPkg := range srcPkgs {
+		outPkg := outPkgs[i]
 
 		astEditorTests = append(astEditorTests, astEditorTest{
 			srcPkg,
 			outPkg,
-			outPkg == nil,
 		})
 	}
 
 	return astEditorTests
 }
 
-func findPkgIn(name string, pkgList []*packages.Package) *packages.Package {
-	for _, pkg := range pkgList {
-		if pkg.Name == name {
-			return pkg
-		}
+func newPanicAstEditorTests(path string) (astEditorTests []astEditorTest) {
+	srcPkgs, err := getAllPackagesIn("./_test/editor/" + path + "/panic/")
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	return nil
+	for _, srcPkg := range srcPkgs {
+		astEditorTests = append(astEditorTests, astEditorTest{
+			srcPkg,
+			nil,
+		})
+	}
+
+	return astEditorTests
+}
+
+func (t astEditorTest) shouldPanic() bool {
+	return strings.Contains(t.srcPkg.PkgPath, "/panic/")
+}
+
+func getFunctionName(i interface{}) string {
+	fullname := runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+	s := strings.Split(fullname, ".")
+
+	return s[len(s)-1]
 }
 
 func fileToString(pkg *packages.Package, file *ast.File) (string, error) {
@@ -57,106 +76,70 @@ func fileToString(pkg *packages.Package, file *ast.File) (string, error) {
 	return buf.String(), err
 }
 
-func assertPanic(t *testing.T, f func()) {
+func assertPanic(f func()) (panicked bool) {
 	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("The code did not panic")
+		if r := recover(); r != nil {
+			panicked = true
 		}
 	}()
 	f()
+
+	return
 }
 
-func TestPkgLevelFuncBodyRemover(t *testing.T) {
-	editor := newAstEditor(removePkgLevelFuncBodyOption)
+func TestAllAstEditorOptions(t *testing.T) {
+	for _, option := range allAstEditorOptions {
+		testAstEditorOption(t, option)
+	}
+}
 
-	for _, test := range newAstEditorTests("func_body") {
-		for i, srcFile := range test.srcPkg.Syntax {
-			if test.shouldPanic {
-				assertPanic(t, func() {
-					editor.edit(srcFile)
-				})
-				continue
+func testAstEditorOption(t *testing.T, option astEditorOption) {
+	editor := newAstEditor(option)
+	optionName := getFunctionName(option)
 
-			} else {
+	astEditorTests := append(newAstEditorTests(optionName), newPanicAstEditorTests(optionName)...)
+	for _, test := range astEditorTests {
+		err := testAstEditor(editor, test)
+		if err != nil {
+			t.Errorf("%v option failed a test:\n%v", optionName, err)
+		}
+	}
+}
+
+func testAstEditor(editor FileEditor, test astEditorTest) error {
+	shouldPanic := test.shouldPanic()
+
+	for i, srcFile := range test.srcPkg.Syntax {
+		if shouldPanic {
+			notPanicked := !assertPanic(func() {
 				editor.edit(srcFile)
+			})
+
+			if notPanicked {
+				return fmt.Errorf("%v/%v didn't panic as expected", test.srcPkg.Name, srcFile.Name.Name)
 			}
 
-			outFile := test.outPkg.Syntax[i]
+			continue
+		}
 
-			got, err := fileToString(test.srcPkg, srcFile)
-			if err != nil {
-				t.Fatal(err)
-			}
+		outFile := test.outPkg.Syntax[i]
 
-			expected, err := fileToString(test.outPkg, outFile)
-			if err != nil {
-				t.Fatal(err)
-			}
+		editor.edit(srcFile)
 
-			if diff := cmp.Diff(expected, got); diff != "" {
-				t.Errorf("editor doesn't generate the expected result:\n%s", diff)
-			}
+		got, err := fileToString(test.srcPkg, srcFile)
+		if err != nil {
+			return err
+		}
+
+		expected, err := fileToString(test.outPkg, outFile)
+		if err != nil {
+			return err
+		}
+
+		if diff := cmp.Diff(expected, got); diff != "" {
+			return fmt.Errorf("editor doesn't generate the expected result:\n%s", diff)
 		}
 	}
-}
 
-func TestUnusedImportsRemover(t *testing.T) {
-	editor := newAstEditor(removeUnusedImportsOption)
-
-	for _, test := range newAstEditorTests("unused_imports") {
-		for i, srcFile := range test.srcPkg.Syntax {
-			outFile := test.outPkg.Syntax[i]
-
-			if test.shouldPanic {
-				assertPanic(t, func() {
-					editor.edit(srcFile)
-				})
-
-				continue
-			} else {
-				editor.edit(srcFile)
-			}
-
-			got, err := fileToString(test.srcPkg, srcFile)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			expected, err := fileToString(test.outPkg, outFile)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if diff := cmp.Diff(expected, got); diff != "" {
-				t.Errorf("editor doesn't generate the expected result:\n%s", diff)
-			}
-		}
-	}
-}
-
-func TestUnattachedCommentsRemover(t *testing.T) {
-	editor := newAstEditor(removeUnattachedCommentsOption)
-
-	for _, test := range newAstEditorTests("unattached_comments") {
-		for i, srcFile := range test.srcPkg.Syntax {
-			editor.edit(srcFile)
-			outFile := test.outPkg.Syntax[i]
-
-			got := &bytes.Buffer{}
-			err := printer.Fprint(got, test.srcPkg.Fset, srcFile)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			expected := &bytes.Buffer{}
-			err = printer.Fprint(expected, test.outPkg.Fset, outFile)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if diff := cmp.Diff(expected.String(), got.String()); diff != "" {
-				t.Errorf("editor doesn't generate the expected result:\n%s", diff)
-			}
-		}
-	}
+	return nil
 }

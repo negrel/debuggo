@@ -1,4 +1,4 @@
-package panic1
+package exportedFuncWithReturn
 
 import (
 	"math"
