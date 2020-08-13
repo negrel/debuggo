@@ -17,7 +17,7 @@ import (
 // Generator is responsible for handling the generation
 // process of the packages.
 type Generator struct {
-	editor     fileEditor
+	editor     FileEditor
 	packages   []*packages.Package
 	commonPkgs []*packages.Package
 	errors     []error
