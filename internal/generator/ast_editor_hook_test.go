@@ -15,17 +15,17 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-type astEditorTest struct {
+type astEditorHookTest struct {
 	srcPkg *packages.Package
 	outPkg *packages.Package
 }
 
-func newAstEditorTests(path string) (astEditorTests []astEditorTest) {
-	srcPkgs, err := getAllPackagesIn("./_test/editor/" + path + "/success/src")
+func newAstEditorHookTests(hook string) (astEditorTests []astEditorHookTest) {
+	srcPkgs, err := getAllPackagesIn("./_test/editor/" + hook + "/success/src")
 	if err != nil {
 		log.Fatal(err)
 	}
-	outPkgs, err := getAllPackagesIn("./_test/editor/" + path + "/success/result")
+	outPkgs, err := getAllPackagesIn("./_test/editor/" + hook + "/success/result")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func newAstEditorTests(path string) (astEditorTests []astEditorTest) {
 	for i, srcPkg := range srcPkgs {
 		outPkg := outPkgs[i]
 
-		astEditorTests = append(astEditorTests, astEditorTest{
+		astEditorTests = append(astEditorTests, astEditorHookTest{
 			srcPkg,
 			outPkg,
 		})
@@ -42,14 +42,14 @@ func newAstEditorTests(path string) (astEditorTests []astEditorTest) {
 	return astEditorTests
 }
 
-func newPanicAstEditorTests(path string) (astEditorTests []astEditorTest) {
+func newPanicAstEditorHookTests(path string) (astEditorTests []astEditorHookTest) {
 	srcPkgs, err := getAllPackagesIn("./_test/editor/" + path + "/panic/")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, srcPkg := range srcPkgs {
-		astEditorTests = append(astEditorTests, astEditorTest{
+		astEditorTests = append(astEditorTests, astEditorHookTest{
 			srcPkg,
 			nil,
 		})
@@ -58,7 +58,7 @@ func newPanicAstEditorTests(path string) (astEditorTests []astEditorTest) {
 	return astEditorTests
 }
 
-func (t astEditorTest) shouldPanic() bool {
+func (t astEditorHookTest) shouldPanic() bool {
 	return strings.Contains(t.srcPkg.PkgPath, "/panic/")
 }
 
@@ -69,11 +69,14 @@ func getFunctionName(i interface{}) string {
 	return s[len(s)-1]
 }
 
-func fileToString(pkg *packages.Package, file *ast.File) (string, error) {
+func fileToString(pkg *packages.Package, file *ast.File) string {
 	buf := &bytes.Buffer{}
 	err := printer.Fprint(buf, pkg.Fset, file)
+	if err != nil {
+		panic(err)
+	}
 
-	return buf.String(), err
+	return buf.String()
 }
 
 func assertPanic(f func()) (panicked bool) {
@@ -87,26 +90,22 @@ func assertPanic(f func()) (panicked bool) {
 	return
 }
 
-func TestAllAstEditorOptions(t *testing.T) {
+func TestAllAstEditorHooks(t *testing.T) {
 	for _, option := range allAstEditorOptions {
-		testAstEditorOption(t, option)
-	}
-}
+		optionName := getFunctionName(option)
+		astEditorTests := append(newAstEditorHookTests(optionName), newPanicAstEditorHookTests(optionName)...)
+		editor := newAstEditor(option)
 
-func testAstEditorOption(t *testing.T, option astEditorOption) {
-	editor := newAstEditor(option)
-	optionName := getFunctionName(option)
-
-	astEditorTests := append(newAstEditorTests(optionName), newPanicAstEditorTests(optionName)...)
-	for _, test := range astEditorTests {
-		err := testAstEditor(editor, test)
-		if err != nil {
-			t.Errorf("%v option failed a test:\n%v", optionName, err)
+		for _, test := range astEditorTests {
+			err := testAstEditorHook(editor, test)
+			if err != nil {
+				t.Errorf("%v option failed a test:\n%v", optionName, err)
+			}
 		}
 	}
 }
 
-func testAstEditor(editor FileEditor, test astEditorTest) error {
+func testAstEditorHook(editor FileEditor, test astEditorHookTest) error {
 	shouldPanic := test.shouldPanic()
 
 	for i, srcFile := range test.srcPkg.Syntax {
@@ -118,23 +117,15 @@ func testAstEditor(editor FileEditor, test astEditorTest) error {
 			if notPanicked {
 				return fmt.Errorf("%v/%v didn't panic as expected", test.srcPkg.Name, srcFile.Name.Name)
 			}
-
 			continue
 		}
 
-		outFile := test.outPkg.Syntax[i]
-
 		editor.edit(srcFile)
 
-		got, err := fileToString(test.srcPkg, srcFile)
-		if err != nil {
-			return err
-		}
+		got := fileToString(test.srcPkg, srcFile)
 
-		expected, err := fileToString(test.outPkg, outFile)
-		if err != nil {
-			return err
-		}
+		outFile := test.outPkg.Syntax[i]
+		expected := fileToString(test.outPkg, outFile)
 
 		if diff := cmp.Diff(expected, got); diff != "" {
 			return fmt.Errorf("editor doesn't generate the expected result:\n%s", diff)
