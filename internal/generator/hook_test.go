@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/negrel/debuggo/internal/editor"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -21,11 +22,11 @@ type astEditorHookTest struct {
 }
 
 func newAstEditorHookTests(hook string) (astEditorTests []astEditorHookTest) {
-	srcPkgs, err := getAllPackagesIn("./_test/editor/" + hook + "/success/src")
+	srcPkgs, err := getAllPackagesIn("./_test/editor_option/" + hook + "/success/src")
 	if err != nil {
 		log.Fatal(err)
 	}
-	outPkgs, err := getAllPackagesIn("./_test/editor/" + hook + "/success/result")
+	outPkgs, err := getAllPackagesIn("./_test/editor_option/" + hook + "/success/result")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -94,7 +95,7 @@ func TestAllAstEditorHooks(t *testing.T) {
 	for _, option := range allAstEditorOptions {
 		optionName := getFunctionName(option)
 		astEditorTests := append(newAstEditorHookTests(optionName), newPanicAstEditorHookTests(optionName)...)
-		editor := newAstEditor(option)
+		editor := editor.newAstEditor(option)
 
 		for _, test := range astEditorTests {
 			err := testAstEditorHook(editor, test)

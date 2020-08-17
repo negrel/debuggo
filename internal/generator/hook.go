@@ -8,13 +8,9 @@ import (
 )
 
 var allAstEditorOptions = []astEditorOption{
-	removePkgLevelFuncBodyOption,
+	addBeforeEditHook(removePkgLevelFuncBody),
 	removeUnusedImportsOption,
-	removeUnattachedCommentsOption,
-}
-
-func removePkgLevelFuncBodyOption(e *astEditor) {
-	e.beforeEditHooks = append(e.beforeEditHooks, removePkgLevelFuncBody)
+	addAfterEditHook(removeUnattachedComments),
 }
 
 func removePkgLevelFuncBody(file *ast.File) {
@@ -95,10 +91,6 @@ func (r *unusedImportsRemover) afterEditHook(file *ast.File) {
 		decl.Specs = r.requiredImports
 		break
 	}
-}
-
-func removeUnattachedCommentsOption(e *astEditor) {
-	e.afterEditHooks = append(e.afterEditHooks, removeUnattachedComments)
 }
 
 func removeUnattachedComments(file *ast.File) {

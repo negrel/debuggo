@@ -13,8 +13,6 @@ type nodeHook = func(n ast.Node) bool
 
 type fileHook = func(f *ast.File)
 
-type astEditorOption = func(editor *astEditor)
-
 type astEditor struct {
 	nodeHooks       []nodeHook
 	beforeEditHooks []fileHook

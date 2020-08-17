@@ -2,7 +2,6 @@ package test1
 
 import (
 	"fmt"
-	"log"
 	"math"
 )
 
