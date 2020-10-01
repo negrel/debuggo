@@ -20,8 +20,7 @@ type hookTest struct {
 
 var unusedImportsRemoverTests = []hookTest{
 	{
-		src: `
-package main
+		src: `package main
 
 import (
 	"fmt"
