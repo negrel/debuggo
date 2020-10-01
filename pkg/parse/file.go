@@ -1,8 +1,12 @@
 package parse
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
+	"go/printer"
+	"go/token"
+	"log"
 	"path/filepath"
 
 	"golang.org/x/tools/go/packages"
@@ -72,4 +76,15 @@ func (f *GoFile) Name() string {
 // AST return an *ast.File object of the file.
 func (f *GoFile) AST() *ast.File {
 	return f.ast
+}
+
+func (f *GoFile) Byte() []byte {
+	buf := &bytes.Buffer{}
+
+	err := printer.Fprint(buf, token.NewFileSet(), f.ast)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return buf.Bytes()
 }
