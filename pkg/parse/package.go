@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -69,7 +68,8 @@ func Package(pkgPath string, parseSubPkgs bool) (*GoPackage, error) {
 	}
 
 	for _, pkg := range pkgs {
-		if !strings.Contains(pkgPath, pkg.PkgPath) {
+		path := filepath.Dir(pkg.GoFiles[0])
+		if pkgPath != path {
 			continue
 		}
 
@@ -78,7 +78,6 @@ func Package(pkgPath string, parseSubPkgs bool) (*GoPackage, error) {
 			subPkgs = findSubPkgs(pkgPath)
 		}
 
-		path := filepath.Dir(pkg.GoFiles[0])
 		errors := make([]error, len(pkg.Errors))
 		for i, err := range pkg.Errors {
 			errors[i] = err
