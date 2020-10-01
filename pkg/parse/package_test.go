@@ -23,6 +23,12 @@ func TestPkg_NewPkg_NotDirectory(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestPkg_NewPkg_EmptyDir(t *testing.T) {
+	filePath := filepath.Join(".", "_data", "pkg", "empty")
+	_, err := Package(filePath, false)
+	assert.NotNil(t, err)
+}
+
 func TestPkg_NewPkg_NoSubPkg(t *testing.T) {
 	dir := filepath.Join(".", "_data", "pkg", "pkg_with_subpkg")
 

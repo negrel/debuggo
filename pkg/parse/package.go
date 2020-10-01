@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"go/token"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -16,6 +17,7 @@ type GoPackage struct {
 	subPackages []*GoPackage
 	errors      []error
 	goFiles     []*GoFile
+	fset        *token.FileSet
 }
 
 func findSubPkgs(dir string) (subPkgs []*GoPackage) {
@@ -68,6 +70,10 @@ func Package(pkgPath string, parseSubPkgs bool) (*GoPackage, error) {
 	}
 
 	for _, pkg := range pkgs {
+		if len(pkg.GoFiles) == 0 {
+			continue
+		}
+
 		path := filepath.Dir(pkg.GoFiles[0])
 		if pkgPath != path {
 			continue
