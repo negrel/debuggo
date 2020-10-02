@@ -12,49 +12,51 @@ type Chief struct {
 	active     int
 }
 
-// New return an inspector Chief.
-func New(inspectors ...Inspector) *Chief {
-	return &Chief{
+// New return an inspector Lead.
+func New(inspectors ...Inspector) *Lead {
+	return &Lead{
 		inspectors: inspectors,
 		active:     len(inspectors),
 	}
 }
 
 // Inspect start the inspection of the given node.
-func (e *Chief) Inspect(node ast.Node) {
-	ast.Inspect(node, func(n ast.Node) bool {
-		for index, inspector := range e.inspectors {
-			if e.active == 0 {
-				e.enableAllInspector()
-				return false
-			}
-
-			notRecursiveHook := !inspector(n)
-
-			if notRecursiveHook {
-				e.disableInspectorUntilNextTree(index, inspector)
-			}
-		}
-
-		return true
-	})
+func (l *Lead) Inspect(node ast.Node) {
+	ast.Inspect(node, l.inspect)
 }
 
-func (e *Chief) disableInspectorUntilNextTree(index int, inspector Inspector) {
-	e.active--
+func (l *Lead) inspect(node ast.Node) bool {
+	for index, inspector := range l.inspectors {
+		if l.active == 0 {
+			l.enableAllInspector()
+			return false
+		}
 
-	e.inspectors[index] = func(n ast.Node) bool {
+		notRecursiveHook := !inspector(node)
+
+		if notRecursiveHook {
+			l.disableInspectorUntilNextTree(index, inspector)
+		}
+	}
+
+	return true
+}
+
+func (l *Lead) disableInspectorUntilNextTree(index int, inspector Inspector) {
+	l.active--
+
+	l.inspectors[index] = func(n ast.Node) bool {
 		if n == nil {
-			e.inspectors[index] = inspector
-			e.active++
+			l.inspectors[index] = inspector
+			l.active++
 		}
 
 		return true
 	}
 }
 
-func (e *Chief) enableAllInspector() {
-	for _, inspector := range e.inspectors {
+func (l *Lead) enableAllInspector() {
+	for _, inspector := range l.inspectors {
 		inspector(nil)
 	}
 }
