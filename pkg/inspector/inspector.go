@@ -6,8 +6,13 @@ import (
 
 type Inspector func(ast.Node) bool
 
-// Chief is the inspector chief that manage the inspection.
-type Chief struct {
+// Lieutenant define an inspector that manage his own inspectors.
+func Lieutenant(inspectors ...Inspector) Inspector {
+	return New(inspectors...).inspect
+}
+
+// Lead is the inspector chief that manage the inspection.
+type Lead struct {
 	inspectors []Inspector
 	active     int
 }
