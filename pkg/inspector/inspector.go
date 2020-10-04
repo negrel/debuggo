@@ -32,15 +32,15 @@ func (l *Lead) Inspect(node ast.Node) {
 
 func (l *Lead) inspect(node ast.Node) bool {
 	for index, inspector := range l.inspectors {
+		recursiveHook := inspector(node)
+
+		if !recursiveHook {
+			l.disableInspectorUntilNextTree(index, inspector)
+		}
+
 		if l.active == 0 {
 			l.enableAllInspector()
 			return false
-		}
-
-		notRecursiveHook := !inspector(node)
-
-		if notRecursiveHook {
-			l.disableInspectorUntilNextTree(index, inspector)
 		}
 	}
 

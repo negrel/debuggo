@@ -13,58 +13,94 @@ type counter struct {
 	value int
 }
 
-func (c *counter) count() int {
-	return c.value
-}
+var helloWorld = `
+	package main
 
-func (c *counter) topLevelDecl(n ast.Node) bool {
-	if _, isDecl := n.(ast.Decl); isDecl {
-		c.value++
-		return false
+	import "fmt"
+
+	func main() {
+		greet("World")
 	}
 
-	return true
-}
-
-func (c *counter) importsCounter(n ast.Node) bool {
-	if _, isImport := n.(*ast.ImportSpec); isImport {
-		c.value++
-		return false
+	func greet(name string) {
+		fmt.Println("Hello", name)
 	}
-
-	return true
-}
-
-func TestEditor_Inspect(t *testing.T) {
-	src := `
-package main
-
-import "fmt"
-
-func main() {
-	// Should not be inspected by funcParamsCounter
-	greetWorld := func() {
-		fmt.Println("Hello world")
-	}
-
-	greet("world")
-	greetWorld()
-}
-
-func greet(name string) {
-	fmt.Println("Hello", name)
-}
 `
-	fs := token.NewFileSet()
-	file, err := parser.ParseFile(fs, "", src, parser.AllErrors)
+
+func declCount(c *counter) Inspector {
+	return func(node ast.Node) bool {
+		if _, isDecl := node.(ast.Decl); isDecl {
+			c.value++
+			return false
+		}
+
+		return true
+	}
+}
+
+func stmtCount(c *counter) Inspector {
+	return func(node ast.Node) bool {
+		if _, isStmt := node.(ast.Stmt); isStmt {
+			c.value++
+		}
+
+		return true
+	}
+}
+
+func TestLead_InspectAll(t *testing.T) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "", helloWorld, parser.AllErrors)
 	assert.Nil(t, err)
 
-	topLevelDeclCounter := new(counter)
-	importsCounter := new(counter)
-	editor := New(importsCounter.importsCounter, topLevelDeclCounter.topLevelDecl)
+	// Expected
+	expectedDeclCounter := new(counter)
+	expectedStmtCounter := new(counter)
+	ast.Inspect(file, declCount(expectedDeclCounter))
+	ast.Inspect(file, stmtCount(expectedStmtCounter))
 
-	editor.Inspect(file)
+	// Actual
+	declCounter := new(counter)
+	stmtCounter := new(counter)
+	lInspector := New(declCount(declCounter), stmtCount(stmtCounter))
+	lInspector.Inspect(file)
 
-	assert.Equal(t, 3, topLevelDeclCounter.count())
-	assert.Equal(t, 1, importsCounter.count())
+	assert.Equal(t, expectedDeclCounter.value, declCounter.value)
+	assert.Equal(t, expectedStmtCounter.value, stmtCounter.value)
+}
+
+func nothingCount(c *counter) Inspector {
+	return func(node ast.Node) bool {
+		if node != nil {
+			c.value++
+		}
+
+		return false
+	}
+}
+
+func TestLead_InspectNothing(t *testing.T) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "", helloWorld, parser.AllErrors)
+	assert.Nil(t, err)
+
+	// Expected
+	expectedCounter := new(counter)
+	expectedCount := nothingCount(expectedCounter)
+	ast.Inspect(file, expectedCount)
+
+	// Actual
+	counters := make([]*counter, 2)
+	counts := make([]Inspector, len(counters))
+	for i := 0; i < len(counters); i++ {
+		counters[i] = new(counter)
+		counts[i] = nothingCount(counters[i])
+	}
+
+	lInspector := New(counts...)
+	lInspector.Inspect(file)
+
+	for i := 0; i < len(counters); i++ {
+		assert.Equal(t, expectedCounter.value, counters[i].value)
+	}
 }
