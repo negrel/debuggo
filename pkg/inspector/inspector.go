@@ -2,7 +2,6 @@ package inspector
 
 import (
 	"go/ast"
-	"log"
 )
 
 type Inspector func(ast.Node) bool
@@ -74,8 +73,6 @@ func (l *Lead) enableInactive() {
 	if _, ok := l.inactive[l.depth]; !ok {
 		return
 	}
-
-	log.Println("Enabling", l.inactive[l.depth])
 
 	for index, inspector := range l.inactive[l.depth] {
 		l.inspectors[index] = inspector

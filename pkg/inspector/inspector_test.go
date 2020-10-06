@@ -106,10 +106,6 @@ func TestLead_InspectNothing(t *testing.T) {
 }
 
 func TestLead_InspectMixed(t *testing.T) {
-	//logFile, err := os.OpenFile("log1", os.O_CREATE|os.O_RDWR, 0755)
-	//assert.Nil(t, err)
-	//log.SetOutput(logFile)
-
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "", helloWorld, parser.AllErrors)
 	assert.Nil(t, err)
@@ -128,4 +124,29 @@ func TestLead_InspectMixed(t *testing.T) {
 
 	assert.Equal(t, expectedDeclCounter.value, declCounter.value)
 	assert.Equal(t, expectedNothingCounter.value, nothingCounter.value)
+}
+
+func TestLieutenant(t *testing.T) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "", helloWorld, parser.AllErrors)
+	assert.Nil(t, err)
+
+	// Expected
+	expectedDeclCounter := new(counter)
+	expectedNothingCounter := new(counter)
+	ast.Inspect(file, declCount(expectedDeclCounter))
+	ast.Inspect(file, nothingCount(expectedNothingCounter))
+
+	// Actual
+	declCounter := new(counter)
+	nothingCounter := new(counter)
+	lInspector := New(
+		Lieutenant(declCount(declCounter), nothingCount(nothingCounter)),
+		Lieutenant(declCount(declCounter), nothingCount(nothingCounter)))
+
+	lInspector.Inspect(file)
+
+	assert.Equal(t, (expectedDeclCounter.value * 2), declCounter.value)
+	assert.Equal(t, (expectedNothingCounter.value * 2), nothingCounter.value)
+
 }
