@@ -2,26 +2,34 @@ package inspector
 
 import (
 	"go/ast"
+	"log"
 )
 
 type Inspector func(ast.Node) bool
 
-// Lieutenant define an inspector that manage his own inspectors.
-func Lieutenant(inspectors ...Inspector) Inspector {
-	return New(inspectors...).inspect
+// Lieutenant define an Inspector that manage his own Inspectors.
+func Lieutenant(Inspectors ...Inspector) Inspector {
+	return New(Inspectors...).inspect
 }
 
-// Lead is the inspector chief that manage the inspection.
+// Lead is the Inspector chief that manage the inspection.
 type Lead struct {
-	inspectors []Inspector
-	active     int
+	inspectors map[int]Inspector
+	depth      int
+	inactive   map[int]map[int]Inspector
 }
 
-// New return an inspector Lead.
+// New return an Inspector Lead.
 func New(inspectors ...Inspector) *Lead {
+	insp := make(map[int]Inspector, len(inspectors))
+	for index, inspector := range inspectors {
+		insp[index] = inspector
+	}
+
 	return &Lead{
-		inspectors: inspectors,
-		active:     len(inspectors),
+		inspectors: insp,
+		depth:      0,
+		inactive:   make(map[int]map[int]Inspector),
 	}
 }
 
@@ -31,37 +39,46 @@ func (l *Lead) Inspect(node ast.Node) {
 }
 
 func (l *Lead) inspect(node ast.Node) bool {
+	if node != nil {
+		l.depth++
+	} else {
+		l.enableInactive()
+		l.depth--
+	}
+
 	for index, inspector := range l.inspectors {
 		recursiveHook := inspector(node)
 
 		if !recursiveHook {
-			l.disableInspectorUntilNextTree(index, inspector)
-		}
-
-		if l.active == 0 {
-			l.enableAllInspector()
-			return false
+			l.disableForSubTree(index)
 		}
 	}
 
+	if len(l.inspectors) == 0 {
+		l.inspect(nil)
+		return false
+	}
 	return true
 }
 
-func (l *Lead) disableInspectorUntilNextTree(index int, inspector Inspector) {
-	l.active--
-
-	l.inspectors[index] = func(n ast.Node) bool {
-		if n == nil {
-			l.inspectors[index] = inspector
-			l.active++
-		}
-
-		return true
+func (l *Lead) disableForSubTree(index int) {
+	if l.inactive[l.depth] == nil {
+		l.inactive[l.depth] = make(map[int]Inspector)
 	}
+
+	l.inactive[l.depth][index] = l.inspectors[index]
+	delete(l.inspectors, index)
 }
 
-func (l *Lead) enableAllInspector() {
-	for _, inspector := range l.inspectors {
-		inspector(nil)
+func (l *Lead) enableInactive() {
+	if _, ok := l.inactive[l.depth]; !ok {
+		return
 	}
+
+	log.Println("Enabling", l.inactive[l.depth])
+
+	for index, inspector := range l.inactive[l.depth] {
+		l.inspectors[index] = inspector
+	}
+	delete(l.inactive, l.depth)
 }
