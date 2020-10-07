@@ -6,14 +6,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/negrel/debuggo/pkg/inspector"
-	"github.com/negrel/debuggo/pkg/parse"
+	"github.com/negrel/asttk/pkg/inspector"
+	"github.com/negrel/asttk/pkg/parse"
 )
 
 func main() {
 	pkg, err := parse.Package(
-		filepath.Join("examples", "gen_assert", "testify", "assert"),
-		//filepath.Join("pkg", "assert"),
+		filepath.Join("code_gen", "assert", "testify", "assert"),
 		false,
 	)
 	if err != nil {
@@ -38,4 +37,12 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+}
+
+func min(a int, b int) int {
+	if a < b {
+		return a
+	}
+
+	return b
 }

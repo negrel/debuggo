@@ -7,8 +7,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/negrel/debuggo/pkg/helper"
-	"github.com/negrel/debuggo/pkg/inspector"
+	"github.com/negrel/asttk/pkg/edit"
+	"github.com/negrel/asttk/pkg/inspector"
 )
 
 func removeTestingTInFuncDecl(node ast.Node) bool {
@@ -78,9 +78,9 @@ func funcFilter(name string) (replaceName string, ok bool) {
 }
 
 func renameFuncWrapper() inspector.Inspector {
-	renameFuncDecl, renameFuncCall := helper.NewFunc().RenameFunc(funcFilter)
+	renameFuncDecl, renameFuncCall := edit.NewFunc().RenameFunc(funcFilter)
 
-	return inspector.Lieutenant(helper.ApplyOnTopDecl(renameFuncDecl), replaceExportedFunc, renameFuncCall)
+	return inspector.Lieutenant(edit.ApplyOnTopDecl(renameFuncDecl), replaceExportedFunc, renameFuncCall)
 }
 
 func replaceExportedFunc(node ast.Node) bool {

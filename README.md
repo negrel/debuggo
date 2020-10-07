@@ -1,5 +1,5 @@
 # :small_red_triangle: Debuggo
-[![codebeat badge](https://codebeat.co/badges/9ae45e94-287c-4fcd-9434-0f403657023e)](https://codebeat.co/projects/github-com-negrel-debuggo-master)
+[![goreport card](https://goreportcard.com/badge/github.com/negrel/debuggo)](https://goreportcard.com/report/github.com/negrel/debuggo)
 
 ### Contributing
 If you want to contribute to Debuggo to add a feature or improve the code contact me at
