@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/negrel/asttk/pkg/edit"
 	"github.com/negrel/asttk/pkg/inspector"
 	"github.com/negrel/asttk/pkg/parse"
 )
@@ -27,22 +28,28 @@ func main() {
 		removeTTypeAssert,
 	)
 
+	prod := inspector.New(
+		edit.ApplyOnTopDecl(removeBodyExportedFunc),
+	)
+
 	for _, file := range pkg.Files() {
 		editor.Inspect(file.AST())
 
-		path := filepath.Join("pkg", "assert", file.Name())
+		path := filepath.Join("pkg", "assert", addSuffix(file.Name(), ".debug"))
 		buildTag := []byte("// +build debuggo-assert\n\n")
 		err = ioutil.WriteFile(path, append(buildTag, file.Byte()...), os.ModePerm)
 		if err != nil {
 			log.Fatal(err)
 		}
-	}
-}
 
-func min(a int, b int) int {
-	if a < b {
-		return a
-	}
+		// Production version
+		prod.Inspect(file.AST())
 
-	return b
+		path = filepath.Join("pkg", "assert", addSuffix(file.Name(), ".prod"))
+		buildTag = []byte("// +build !debuggo-assert\n\n")
+		err = ioutil.WriteFile(path, append(buildTag, file.Byte()...), os.ModePerm)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 }
