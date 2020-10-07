@@ -39,10 +39,12 @@ func (l *Lead) Inspect(node ast.Node) {
 
 func (l *Lead) inspect(node ast.Node) bool {
 	if node != nil {
-		l.depth++
+		defer func() { l.depth++ }()
 	} else {
-		l.enableInactive()
-		l.depth--
+		defer func() {
+			l.depth--
+			l.enableInactive()
+		}()
 	}
 
 	for index, inspector := range l.inspectors {
@@ -54,7 +56,7 @@ func (l *Lead) inspect(node ast.Node) bool {
 	}
 
 	if len(l.inspectors) == 0 {
-		l.inspect(nil)
+		l.enableInactive()
 		return false
 	}
 	return true
