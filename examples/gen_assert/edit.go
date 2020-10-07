@@ -4,6 +4,11 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"log"
+	"strings"
+
+	"github.com/negrel/debuggo/pkg/helper"
+	"github.com/negrel/debuggo/pkg/inspector"
 )
 
 func removeTestingTInFuncDecl(node ast.Node) bool {
@@ -44,6 +49,85 @@ func removeTestingTInFuncCall(node ast.Node) (recursive bool) {
 	}
 
 	return
+}
+
+func extractArguments(fl *ast.FieldList) []ast.Expr {
+	result := make([]ast.Expr, 0, len(fl.List))
+
+	for _, field := range fl.List {
+		for _, name := range field.Names {
+			result = append(result, &ast.Ident{
+				Name: name.Name,
+			})
+		}
+	}
+
+	return result
+}
+
+const exportedFuncNamePrefix = "debuggoGen_"
+
+func funcFilter(name string) (replaceName string, ok bool) {
+	if !ast.IsExported(name) {
+		return "", false
+	}
+
+	replaceName = exportedFuncNamePrefix + name
+
+	return replaceName, true
+}
+
+func renameFuncWrapper() inspector.Inspector {
+	renameFuncDecl, renameFuncCall := helper.NewFunc().RenameFunc(funcFilter)
+
+	return inspector.Lieutenant(helper.ApplyOnTopDecl(renameFuncDecl), replaceExportedFunc, renameFuncCall)
+}
+
+func replaceExportedFunc(node ast.Node) bool {
+	file, isFile := node.(*ast.File)
+	if !isFile {
+		return true
+	}
+
+	for _, decl := range file.Decls {
+		funcDecl, isFuncDecl := decl.(*ast.FuncDecl)
+		if !isFuncDecl {
+			continue
+		}
+
+		if funcDecl.Name.Name == "Fail" {
+			log.Println("replace exported function: Fail")
+		}
+
+		if !strings.HasPrefix(funcDecl.Name.Name, exportedFuncNamePrefix) {
+			continue
+		}
+
+		replaceFuncDecl := &ast.FuncDecl{
+			Name: ast.NewIdent(funcDecl.Name.Name[len(exportedFuncNamePrefix):]),
+			Doc:  funcDecl.Doc,
+			Type: &ast.FuncType{
+				Params: funcDecl.Type.Params,
+				Results: &ast.FieldList{
+					List: []*ast.Field{},
+				},
+			},
+			Body: &ast.BlockStmt{
+				List: []ast.Stmt{
+					&ast.ExprStmt{
+						X: &ast.CallExpr{
+							Fun:  funcDecl.Name,
+							Args: extractArguments(funcDecl.Type.Params),
+						},
+					},
+				},
+			},
+		}
+
+		file.Decls = append(file.Decls, replaceFuncDecl)
+	}
+
+	return true
 }
 
 func removeTTypeAssert(node ast.Node) (recursive bool) {

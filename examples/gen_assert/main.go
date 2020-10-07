@@ -21,6 +21,7 @@ func main() {
 	}
 
 	editor := inspector.New(
+		renameFuncWrapper(),
 		removeTestingTInFuncDecl,
 		removeTestingTInFuncCall,
 		replaceTErrorfWithPanic,
@@ -38,28 +39,3 @@ func main() {
 		}
 	}
 }
-
-//func main() {
-//	file, err := parse.File(
-//		filepath.Join("examples", "gen_assert", "testify", "assert", "assertions.go"),
-//		//filepath.Join("pkg", "assert", "assertions.go"),
-//	)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//
-//	editor := inspector.New(
-//		removeTestingTInFuncDecl,
-//		removeTestingTInFuncCall,
-//		replaceTErrorfWithPanic,
-//		removeTTypeAssert,
-//	)
-//
-//	editor.Inspect(file.AST())
-//
-//	path := filepath.Join("pkg", "assert", "assertions.go")
-//	err = ioutil.WriteFile(path, file.Byte(), os.ModePerm)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//}
