@@ -1,3 +1,3 @@
-[submodule "examples/gen_assert/testify"]
-	path = examples/gen_assert/testify
+[submodule "code_gen/assert/testify"]
+	path = code_gen/assert/testify
 	url = https://github.com/stretchr/testify.git
