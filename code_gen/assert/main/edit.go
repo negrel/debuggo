@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"log"
 	"strings"
 
 	"github.com/negrel/asttk/pkg/edit"
@@ -95,10 +94,6 @@ func replaceExportedFunc(node ast.Node) bool {
 			continue
 		}
 
-		if funcDecl.Name.Name == "Fail" {
-			log.Println("replace exported function: Fail")
-		}
-
 		if !strings.HasPrefix(funcDecl.Name.Name, exportedFuncNamePrefix) {
 			continue
 		}
@@ -141,12 +136,12 @@ func removeTTypeAssert(node ast.Node) (recursive bool) {
 	for i, stmt := range block.List {
 		ifStmt, isIfStmt := stmt.(*ast.IfStmt)
 		if !isIfStmt {
-			return
+			continue
 		}
 
 		assignStmt, isAssignStmt := ifStmt.Init.(*ast.AssignStmt)
 		if !isAssignStmt {
-			return
+			continue
 		}
 
 		typeAssertExpr, isTypeAssertExpr := assignStmt.Rhs[0].(*ast.TypeAssertExpr)
@@ -156,7 +151,7 @@ func removeTTypeAssert(node ast.Node) (recursive bool) {
 
 		ident, isIdent := typeAssertExpr.X.(*ast.Ident)
 		if !isIdent || ident.Name != "t" {
-			return
+			continue
 		}
 
 		index := min(i+1, len(block.List)-1)
