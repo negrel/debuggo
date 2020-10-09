@@ -1,15 +1,22 @@
 package main
 
 import (
+	"go/ast"
 	"io/ioutil"
 	"log"
-	"os"
 	"path/filepath"
 
 	"github.com/negrel/asttk/pkg/edit"
 	"github.com/negrel/asttk/pkg/inspector"
 	"github.com/negrel/asttk/pkg/parse"
 )
+
+var skip = map[string]struct{}{
+	"assertion_forward.go":  {},
+	"forward_assertions.go": {},
+	"doc.go":                {},
+	"errors.go":             {},
+}
 
 func main() {
 	pkg, err := parse.Package(
@@ -20,34 +27,71 @@ func main() {
 		log.Fatal(err)
 	}
 
+	di := newDebugInspector()
 	editor := inspector.New(
 		renameFuncWrapper(),
 		removeTestingTInFuncDecl,
 		removeTestingTInFuncCall,
+		di.scanExportedFuncDecl,
+		di.scanImportsDecl,
 		replaceTErrorfWithPanic,
 		removeTTypeAssert,
 	)
 
-	prod := inspector.New(
-		edit.ApplyOnTopDecl(removeBodyExportedFunc),
+	findUnusedImports, removeUnusedImports := edit.RemoveUnusedImports()
+	prodEditor := inspector.New(
+		findUnusedImports,
+		removeBodyExportedFunc,
 	)
 
-	for _, file := range pkg.Files() {
-		editor.Inspect(file.AST())
+	outputDir := filepath.Join("pkg", "assert")
+	for _, file := range pkg.Files {
+		if _, ok := skip[file.Name()]; ok {
+			continue
+		}
 
-		path := filepath.Join("pkg", "assert", addSuffix(file.Name(), ".debug"))
-		buildTag := []byte("// +build debuggo-assert\n\n")
-		err = ioutil.WriteFile(path, append(buildTag, file.Byte()...), os.ModePerm)
+		editor.Inspect(file.AST())
+		err = file.WriteFile(filepath.Join(outputDir, file.Name()))
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// Production version
-		prod.Inspect(file.AST())
+		// Debug file
+		debugFile := parse.NewGoFile(addSuffix(file.Name(), ".debug"), &ast.File{
+			Name:    ast.NewIdent(pkg.Name()),
+			Decls:   di.decls,
+			Imports: file.AST().Imports,
+		})
+		ast.Inspect(debugFile.AST(), findUnusedImports)
+		removeUnusedImports(debugFile.AST())
 
-		path = filepath.Join("pkg", "assert", addSuffix(file.Name(), ".prod"))
-		buildTag = []byte("// +build !debuggo-assert\n\n")
-		err = ioutil.WriteFile(path, append(buildTag, file.Byte()...), os.ModePerm)
+		data, err := debugFile.Bytes()
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = ioutil.WriteFile(
+			filepath.Join(outputDir, debugFile.Name()),
+			append([]byte("// +build assert\n\n"), data...),
+			0755,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Prod file
+		prodFile := parse.NewGoFile(addSuffix(file.Name(), ".prod"), debugFile.AST())
+		prodEditor.Inspect(prodFile.AST())
+		removeUnusedImports(debugFile.AST())
+
+		data, err = prodFile.Bytes()
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = ioutil.WriteFile(
+			filepath.Join(outputDir, prodFile.Name()),
+			append([]byte("// +build !assert\n\n"), data...),
+			0755,
+		)
 		if err != nil {
 			log.Fatal(err)
 		}

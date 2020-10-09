@@ -4,24 +4,25 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"strings"
 
 	"github.com/negrel/asttk/pkg/edit"
 	"github.com/negrel/asttk/pkg/inspector"
 )
 
 func removeTestingTInFuncDecl(node ast.Node) bool {
-	fnType, isFuncType := node.(*ast.FuncType)
-	if !isFuncType {
+	funcDecl, isFuncDecl := node.(*ast.FuncDecl)
+	if !isFuncDecl {
 		return true
 	}
 
+	fnType := funcDecl.Type
 	for i, param := range fnType.Params.List {
 		if fmt.Sprint(param.Type) != "TestingT" {
 			continue
 		}
 
-		fnType.Params.List = append(fnType.Params.List[:i], fnType.Params.List[i+1:]...)
+		length := min(i+1, len(fnType.Params.List))
+		fnType.Params.List = append(fnType.Params.List[:i], fnType.Params.List[length:]...)
 	}
 
 	return false
@@ -50,20 +51,6 @@ func removeTestingTInFuncCall(node ast.Node) (recursive bool) {
 	return
 }
 
-func extractArguments(fl *ast.FieldList) []ast.Expr {
-	result := make([]ast.Expr, 0, len(fl.List))
-
-	for _, field := range fl.List {
-		for _, name := range field.Names {
-			result = append(result, &ast.Ident{
-				Name: name.Name,
-			})
-		}
-	}
-
-	return result
-}
-
 const exportedFuncNamePrefix = "debuggoGen_"
 
 func funcFilter(name string) (replaceName string, ok bool) {
@@ -77,52 +64,8 @@ func funcFilter(name string) (replaceName string, ok bool) {
 }
 
 func renameFuncWrapper() inspector.Inspector {
-	renameFuncDecl, renameFuncCall := edit.NewFunc().RenameFunc(funcFilter)
-
-	return inspector.Lieutenant(edit.ApplyOnTopDecl(renameFuncDecl), replaceExportedFunc, renameFuncCall)
-}
-
-func replaceExportedFunc(node ast.Node) bool {
-	file, isFile := node.(*ast.File)
-	if !isFile {
-		return true
-	}
-
-	for _, decl := range file.Decls {
-		funcDecl, isFuncDecl := decl.(*ast.FuncDecl)
-		if !isFuncDecl {
-			continue
-		}
-
-		if !strings.HasPrefix(funcDecl.Name.Name, exportedFuncNamePrefix) {
-			continue
-		}
-
-		replaceFuncDecl := &ast.FuncDecl{
-			Name: ast.NewIdent(funcDecl.Name.Name[len(exportedFuncNamePrefix):]),
-			Doc:  funcDecl.Doc,
-			Type: &ast.FuncType{
-				Params: funcDecl.Type.Params,
-				Results: &ast.FieldList{
-					List: []*ast.Field{},
-				},
-			},
-			Body: &ast.BlockStmt{
-				List: []ast.Stmt{
-					&ast.ExprStmt{
-						X: &ast.CallExpr{
-							Fun:  funcDecl.Name,
-							Args: extractArguments(funcDecl.Type.Params),
-						},
-					},
-				},
-			},
-		}
-
-		file.Decls = append(file.Decls, replaceFuncDecl)
-	}
-
-	return true
+	renameFuncDecl, renameFuncCall := edit.RenameFunc(funcFilter)
+	return inspector.Lieutenant(edit.ApplyOnTopDecl(renameFuncDecl), renameFuncCall)
 }
 
 func removeTTypeAssert(node ast.Node) (recursive bool) {
