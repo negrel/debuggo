@@ -52,3 +52,21 @@ func removeUnexportedFunc(node ast.Node) bool {
 	}
 	return false
 }
+
+func renameFuncParams(node ast.Node) (recursive bool) {
+	recursive = true
+
+	funcType, isFuncType := node.(*ast.FuncType)
+	if !isFuncType {
+		return
+	}
+
+	noName := ast.NewIdent("_")
+	for _, params := range funcType.Params.List {
+		for i, _ := range params.Names {
+			params.Names[i] = noName
+		}
+	}
+
+	return false
+}

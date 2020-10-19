@@ -43,6 +43,7 @@ func main() {
 		removeUnexportedFunc,
 		removeFuncResult,
 		removeFuncBody,
+		renameFuncParams,
 		findUnusedImports,
 	)
 
