@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"go/ast"
+	"go/printer"
+	"go/token"
 	"io/ioutil"
 	"log"
 	"path/filepath"
 
-	"github.com/negrel/asttk/pkg/edit"
 	"github.com/negrel/asttk/pkg/inspector"
 	"github.com/negrel/asttk/pkg/parse"
+	"github.com/negrel/asttk/pkg/utils"
 )
 
 var skip = map[string]struct{}{
@@ -27,21 +30,20 @@ func main() {
 		log.Fatal(err)
 	}
 
-	di := newDebugInspector()
 	editor := inspector.New(
 		renameFuncWrapper(),
 		removeTestingTInFuncDecl,
 		removeTestingTInFuncCall,
-		di.scanExportedFuncDecl,
-		di.scanImportsDecl,
 		replaceTErrorfWithPanic,
 		removeTTypeAssert,
 	)
 
-	findUnusedImports, removeUnusedImports := edit.RemoveUnusedImports()
+	findUnusedImports, removeUnusedImports := utils.RemoveUnusedImports()
 	prodEditor := inspector.New(
+		removeUnexportedFunc,
+		removeFuncResult,
+		removeFuncBody,
 		findUnusedImports,
-		removeBodyExportedFunc,
 	)
 
 	outputDir := filepath.Join("pkg", "assert")
@@ -51,27 +53,14 @@ func main() {
 		}
 
 		editor.Inspect(file.AST())
-		err = file.WriteFile(filepath.Join(outputDir, file.Name()))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// Debug file
-		debugFile := parse.NewGoFile(addSuffix(file.Name(), ".debug"), &ast.File{
-			Name:    ast.NewIdent(pkg.Name()),
-			Decls:   di.decls,
-			Imports: file.AST().Imports,
-		})
-		ast.Inspect(debugFile.AST(), findUnusedImports)
-		removeUnusedImports(debugFile.AST())
-
-		data, err := debugFile.Bytes()
+		buf := &bytes.Buffer{}
+		err = file.Fprint(buf)
 		if err != nil {
 			log.Fatal(err)
 		}
 		err = ioutil.WriteFile(
-			filepath.Join(outputDir, debugFile.Name()),
-			append([]byte("// +build assert\n\n"), data...),
+			filepath.Join(outputDir, file.Name()),
+			append([]byte("// +build assert\n\n"), buf.Bytes()...),
 			0755,
 		)
 		if err != nil {
@@ -79,17 +68,24 @@ func main() {
 		}
 
 		// Prod file
-		prodFile := parse.NewGoFile(addSuffix(file.Name(), ".prod"), debugFile.AST())
-		prodEditor.Inspect(prodFile.AST())
-		removeUnusedImports(debugFile.AST())
+		prodFileName := addSuffix(file.Name(), ".prod")
+		prodFile := &ast.File{
+			Name:    ast.NewIdent(pkg.Name()),
+			Decls:   file.AST().Decls,
+			Imports: file.AST().Imports,
+		}
+		prodEditor.Inspect(prodFile)
+		removeUnusedImports(prodFile)
 
-		data, err = prodFile.Bytes()
+		buf = &bytes.Buffer{}
+		err = printer.Fprint(buf, token.NewFileSet(), prodFile)
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		err = ioutil.WriteFile(
-			filepath.Join(outputDir, prodFile.Name()),
-			append([]byte("// +build !assert\n\n"), data...),
+			filepath.Join(outputDir, prodFileName),
+			append([]byte("// +build !assert\n\n"), buf.Bytes()...),
 			0755,
 		)
 		if err != nil {

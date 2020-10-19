@@ -5,8 +5,8 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/negrel/asttk/pkg/edit"
 	"github.com/negrel/asttk/pkg/inspector"
+	"github.com/negrel/asttk/pkg/utils"
 )
 
 func removeTestingTInFuncDecl(node ast.Node) bool {
@@ -64,8 +64,53 @@ func funcFilter(name string) (replaceName string, ok bool) {
 }
 
 func renameFuncWrapper() inspector.Inspector {
-	renameFuncDecl, renameFuncCall := edit.RenameFunc(funcFilter)
-	return inspector.Lieutenant(edit.ApplyOnTopDecl(renameFuncDecl), renameFuncCall)
+	_, renameFuncCall := utils.RenameFunc(funcFilter)
+	return inspector.Lieutenant(replaceExportedFunc, renameFuncCall)
+}
+
+func replaceExportedFunc(node ast.Node) bool {
+
+	file, isFile := node.(*ast.File)
+	if !isFile {
+		return true
+	}
+
+	for i, decl := range file.Decls {
+		funcDecl, isFuncDecl := decl.(*ast.FuncDecl)
+		if !isFuncDecl {
+			continue
+		}
+
+		newName, ok := funcFilter(funcDecl.Name.Name)
+		if !ok || newName == "" {
+			continue
+		}
+
+		file.Decls[i] = &ast.FuncDecl{
+			Name: funcDecl.Name,
+			Doc:  funcDecl.Doc,
+			Type: &ast.FuncType{
+				Params: funcDecl.Type.Params,
+				Results: &ast.FieldList{
+					List: []*ast.Field{},
+				},
+			},
+			Body: &ast.BlockStmt{
+				List: []ast.Stmt{
+					&ast.ExprStmt{
+						X: &ast.CallExpr{
+							Fun:  funcDecl.Name,
+							Args: extractArguments(funcDecl.Type.Params),
+						},
+					},
+				},
+			},
+		}
+
+		funcDecl.Name = ast.NewIdent(newName)
+		file.Decls = append(file.Decls, funcDecl)
+	}
+	return false
 }
 
 func removeTTypeAssert(node ast.Node) (recursive bool) {
