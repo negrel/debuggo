@@ -1,19 +1,18 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/negrel/debuggo/pkg/assert"
 )
 
-func cureCOVID() (int, error) {
-	return -1, errors.New("failed to cure COVID")
+func getWeather() (int, error) {
+	return -1, fmt.Errorf("unable to get the weather forecast")
 }
 
 func main() {
-	days, err := cureCOVID()
-	assert.Nil(err, err)
+	weather, err := getWeather()
+	assert.Nil(err)
 
-	fmt.Printf("it took %v days to cure the COVID.\n", days)
+	fmt.Println("In one hour the temperature will be", weather, "°C")
 }
