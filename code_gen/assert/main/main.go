@@ -44,7 +44,6 @@ func main() {
 		renameFuncParams,
 		removeFuncResult,
 		removeFuncBody,
-		renameFuncParams,
 		findUnusedImports,
 	)
 
