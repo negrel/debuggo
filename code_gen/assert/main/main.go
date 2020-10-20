@@ -40,7 +40,8 @@ func main() {
 
 	findUnusedImports, removeUnusedImports := utils.RemoveUnusedImports()
 	prodEditor := inspector.New(
-		removeUnexportedFunc,
+		removeUnexportedDecls,
+		renameFuncParams,
 		removeFuncResult,
 		removeFuncBody,
 		renameFuncParams,
