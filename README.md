@@ -31,7 +31,7 @@ going on inside. This is where I discovered the assert function of dart, *assert
 
 > In production code, assertions are ignored, and the arguments to `assert` aren’t evaluated.
 
-This function is pretty basic but and allows developer to make assertions in classes methods but without adding overhead
+This function is pretty basic, but it allows developers to make assertions in classes methods without adding overhead
 to production binary. Take a look at this part of the definition :
 
 >In **production** code, assertions are **ignored**, and the arguments to `assert` aren’t **evaluated**.
@@ -39,13 +39,11 @@ to production binary. Take a look at this part of the definition :
 Assertions are removed for the production, thereby, we can write development code without **increasing** the size or
 **slowing down** our production binaries.
 
-
-
 This is exactly what we tried to reproduce in `pkg/assert`:
 
-## The assert package
-The assert package is modified version of the excellent [`testify/assert`](https://github.com/stretchr/testify) package.
-Thus you can use assert functions outside tests using the `assert` build tag. 
+## The `assert` package
+The `assert` package is a modified version of the excellent [`testify/assert`](https://github.com/stretchr/testify)
+package. Thus, you can use assert functions outside tests using the `assert` build tag. 
 
 - Prints friendly, easy to read failure descriptions  
 
