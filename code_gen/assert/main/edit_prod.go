@@ -1,9 +1,67 @@
 package main
 
 import (
+	"bytes"
 	"go/ast"
+	"go/printer"
 	"go/token"
+	"io/ioutil"
+	"log"
+	"path/filepath"
+
+	"github.com/negrel/asttk/pkg/inspector"
+	"github.com/negrel/asttk/pkg/parse"
+	"github.com/negrel/asttk/pkg/utils"
 )
+
+func init() {
+	var findUnusedImports inspector.Inspector
+	findUnusedImports, removeUnusedImports = utils.RemoveUnusedImports()
+
+	prodEditor = inspector.New(
+		removeUnexportedDecls,
+		renameFuncParams,
+		removeFuncResult,
+		removeFuncBody,
+		findUnusedImports,
+	)
+}
+
+var prodEditor *inspector.Lead
+var removeUnusedImports func(file *ast.File)
+
+func editProdFile(file *parse.GoFile) {
+	// Start the inspection/edition of the AST
+	prodFile := &ast.File{
+		Name:    file.AST().Name,
+		Decls:   file.AST().Decls,
+		Imports: file.AST().Imports,
+	}
+	prodEditor.Inspect(prodFile)
+	removeUnusedImports(prodFile)
+
+	// Write the edited AST into the buffer
+	buf := &bytes.Buffer{}
+	err := printer.Fprint(buf, token.NewFileSet(), prodFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Write the buffer to the disk
+	prodFileName := addSuffix(file.Name(), ".prod")
+	err = ioutil.WriteFile(
+		filepath.Join("pkg", "assert", prodFileName),
+		append([]byte("// +build !assert\n\n"), buf.Bytes()...),
+		0755,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// -----------------
+// prod editor hooks
+// -----------------
 
 func removeFuncBody(node ast.Node) (recursive bool) {
 	recursive = true

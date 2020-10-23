@@ -1,13 +1,57 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/token"
+	"io/ioutil"
+	"log"
+	"path/filepath"
 
 	"github.com/negrel/asttk/pkg/inspector"
+	"github.com/negrel/asttk/pkg/parse"
 	"github.com/negrel/asttk/pkg/utils"
 )
+
+func init() {
+	editor = inspector.New(
+		renameFuncWrapper(),
+		removeTestingTInFuncDecl,
+		removeTestingTInFuncCall,
+		replaceTErrorfWithPanic,
+		removeTTypeAssert,
+	)
+}
+
+// editor is an ast inspector that generate the debug files.
+var editor *inspector.Lead
+
+func editFile(file *parse.GoFile) {
+	// Start the inspection/edition of the AST
+	editor.Inspect(file.AST())
+
+	// Write the edited AST into the buffer
+	buf := &bytes.Buffer{}
+	err := file.Fprint(buf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Write the buffer to the disk
+	err = ioutil.WriteFile(
+		filepath.Join("pkg", "assert", file.Name()),
+		append([]byte("// +build assert\n\n"), buf.Bytes()...),
+		0755,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// ------------
+// editor hooks
+// ------------
 
 func removeTestingTInFuncDecl(node ast.Node) bool {
 	funcDecl, isFuncDecl := node.(*ast.FuncDecl)
@@ -16,13 +60,17 @@ func removeTestingTInFuncDecl(node ast.Node) bool {
 	}
 
 	fnType := funcDecl.Type
-	for i, param := range fnType.Params.List {
+	i := -1
+	for i != len(fnType.Params.List)-1 {
+		i++
+		param := fnType.Params.List[i]
+
 		if fmt.Sprint(param.Type) != "TestingT" {
 			continue
 		}
 
-		length := min(i+1, len(fnType.Params.List))
-		fnType.Params.List = append(fnType.Params.List[:i], fnType.Params.List[length:]...)
+		fnType.Params.List = append(fnType.Params.List[:i], fnType.Params.List[i+1:]...)
+		i--
 	}
 
 	return false
@@ -121,7 +169,11 @@ func removeTTypeAssert(node ast.Node) (recursive bool) {
 		return
 	}
 
-	for i, stmt := range block.List {
+	i := -1
+	for i != len(block.List)-1 {
+		i++
+
+		stmt := block.List[i]
 		ifStmt, isIfStmt := stmt.(*ast.IfStmt)
 		if !isIfStmt {
 			continue
@@ -142,8 +194,8 @@ func removeTTypeAssert(node ast.Node) (recursive bool) {
 			continue
 		}
 
-		index := min(i+1, len(block.List)-1)
-		block.List = append(block.List[:i], block.List[index:]...)
+		block.List = append(block.List[:i], block.List[i+1:]...)
+		i--
 	}
 
 	return

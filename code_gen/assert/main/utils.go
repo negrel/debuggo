@@ -5,14 +5,6 @@ import (
 	"path/filepath"
 )
 
-func min(a int, b int) int {
-	if a < b {
-		return a
-	}
-
-	return b
-}
-
 func addSuffix(filename, suffix string) string {
 	ext := filepath.Ext(filename)
 	extLen := len(ext)
@@ -33,4 +25,17 @@ func extractArguments(fl *ast.FieldList) []ast.Expr {
 	}
 
 	return result
+}
+
+func isBlackListed(name string) bool {
+	var blacklist = map[string]struct{}{
+		"assertion_forward.go":  {},
+		"forward_assertions.go": {},
+		"doc.go":                {},
+		"errors.go":             {},
+	}
+
+	_, isBlackListed := blacklist[name]
+
+	return isBlackListed
 }
