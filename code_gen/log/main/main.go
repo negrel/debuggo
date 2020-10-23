@@ -24,10 +24,10 @@ func main() {
 			continue
 		}
 
-		logLevel := len(logLevelsName) - 1
+		logLevel := len(logLevelsName)
 		for logLevel != 0 {
-			editFile(file, logLevel)
 			logLevel--
+			editFile(file, logLevel)
 		}
 
 		editProdFile(file)
