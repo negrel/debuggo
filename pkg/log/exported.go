@@ -2,6 +2,8 @@
 
 package log
 
+import ()
+
 // Panic level
 
 func Panic(args ...interface{}) {
