@@ -3,6 +3,7 @@
 package assert
 
 import (
+	yaml "gopkg.in/yaml.v3"
 	"time"
 )
 
