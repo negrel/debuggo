@@ -46,9 +46,19 @@ The `assert` package is a modified version of the excellent [`testify/assert`](h
 package. Thus, you can use assert functions outside tests using the `assert` build tag. 
 
 - Prints friendly, easy to read failure descriptions  
-
 - Allows for very readable code
 - Optionally annotate each assertion with a message
+
+## The `log` package
+This package is a wrapper around the `log` package of the standard lib. There is 7 log levels and you can choose one of 
+the following using a build tag:
+- Panic
+- Fatal
+- Error
+- Warn
+- Info
+- Debug
+- Trace
 
 ### Contributing
 If you want to contribute to Debuggo to add a feature or improve the code contact me at
